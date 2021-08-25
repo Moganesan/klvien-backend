@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+     match /institutions/{inId} {
+        allow read: if true;
+     }
+    
+     match /students/{stId}{
+       allow get: if true;
+       allow update: if isAuth() && isTeacher(); 
+       allow create: if isAuth() && isTeacher();
+       allow delete: if false;
+     }
+     
+    function isTeacher (){
+        return exists(/databases/$(database)/documents/teachers/$(request.auth.token.email));
+    }
+     
+    function isAuth() {
+         return  request.auth != null;
+    }
+
+    function isStudent(){
+         return request.auth.uid in resource.data.students;
+    }
+    
+  }
+}
+
+
+
+ 
