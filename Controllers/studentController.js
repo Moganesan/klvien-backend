@@ -20,7 +20,7 @@ const verifySession = async (req, res, next) => {
             type: data.type,
             name: data.Name,
             email: data.Email,
-            profile: decodedToken.picture,
+            Gauth: data.googleAuth,
           },
           token: decodedToken,
           student: {
@@ -95,6 +95,7 @@ const loginAccount = async (req, res, next) => {
                 type: data.type,
                 name: data.Name,
                 email: data.Email,
+                Gauth: data.googleAuth,
               },
               student: {
                 fname: data.Name,
@@ -147,6 +148,78 @@ const loginAccount = async (req, res, next) => {
     return res.status(400).send({ status: 400, error: err });
   }
   next();
+};
+
+const googleLogin = async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const data = await firebase
+      .firestore()
+      .collection("students")
+      .doc(email)
+      .get()
+      .then((res) => res.data());
+
+    if (!data.googleAuth) {
+      return res.status(403).send({
+        status: 403,
+        data: null,
+        message: "student not found!",
+      });
+    }
+
+    const response = [
+      {
+        logindetails: {
+          StudId: data.StudId,
+          InId: data.InId,
+          SemId: data.SemId,
+          profile: data.profile,
+          DepId: data.DepId,
+          type: data.type,
+          name: data.Name,
+          email: data.Email,
+          Gauth: data.googleAuth,
+        },
+        student: {
+          fname: data.Name,
+          lname: data.last_name,
+          gender: data.sex,
+          dob: data.dob,
+          fatname: data.father_name,
+          depname: data.dep_name,
+          motname: data.mother_name,
+          religion: data.religion,
+          profile: data.profile,
+          blood_group: data.blood_group,
+          mobile1: data.contact_mobile,
+          mobile2: data.contact_mobile2,
+          address1: data.contact_address1,
+          address2: data.contact_address2,
+          address3: data.contact_address3,
+          pincode: data.pincode,
+          email: data.Email,
+          disctrict: data.district,
+          state: data.state,
+          country: data.country,
+          community: data.community,
+          admissionNumber: data.admission_number,
+          title: data.title,
+          age: data.age,
+          university: data.university,
+          qualification: data.qualification,
+        },
+      },
+    ];
+    req.session.auth = response;
+    return res.status(200).send({
+      status: 200,
+      data: response[0],
+      message: "login successful",
+    });
+  } catch (err) {
+    return res.status(400).send({ status: 400, error: err });
+  }
 };
 
 const createAccount = async (req, res) => {
@@ -582,6 +655,7 @@ const AddAttendance = async (req, res) => {
 
 module.exports = {
   loginAccount,
+  googleLogin,
   createAccount,
   verifySession,
   GetAttendance,

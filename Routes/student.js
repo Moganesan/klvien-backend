@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const {
   loginAccount,
+  googleLogin,
   createAccount,
   GetAttendance,
   GetAssignment,
@@ -106,13 +107,11 @@ const validate = async (req, res, next) => {
 };
 
 const checkStudent = async (req, res, next) => {
-  const { email, password } = req.body;
-  if (!email) return res.status(400).send({ error: "missing email" });
-  if (!password) return res.status(400).send({ error: "missing password" });
+  const { email } = req.body;
   const data = await firebase
     .firestore()
     .collection("students")
-    .doc(email)
+    .doc(email.trim())
     .get();
   if (!data.exists) {
     return res.status(404).send({
@@ -126,6 +125,8 @@ const checkStudent = async (req, res, next) => {
 
 router.post("/login", checkStudent, loginAccount);
 
+router.post("/googleLogin", checkStudent, googleLogin);
+
 router.post("/signup", checkStudent, createAccount);
 
 router.get("/verify", validate, (req, res) => {
@@ -133,6 +134,16 @@ router.get("/verify", validate, (req, res) => {
     status: 401,
     data: null,
     message: "Unothorized request plese login",
+  });
+});
+
+router.get("/signout", (req, res) => {
+  console.log("true");
+  req.session.destroy();
+  return res.status(200).send({
+    status: 200,
+    data: null,
+    message: "session destroyed",
   });
 });
 
