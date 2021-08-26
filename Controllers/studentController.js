@@ -53,7 +53,9 @@ const verifySession = async (req, res, next) => {
           },
         },
       ];
-      req.session.auth = response;
+      req.session.reload(() => {
+        req.session.auth = response;
+      });
       return res.status(200).send({
         status: 200,
         data: response[0],
@@ -88,12 +90,12 @@ const loginAccount = async (req, res, next) => {
                 StudId: data.StudId,
                 InId: data.InId,
                 SemId: data.SemId,
+                profile: data.profile,
                 DepId: data.DepId,
                 type: data.type,
                 name: data.Name,
                 email: data.Email,
               },
-              token: decodedToken,
               student: {
                 fname: data.Name,
                 lname: data.last_name,
@@ -103,6 +105,7 @@ const loginAccount = async (req, res, next) => {
                 depname: data.dep_name,
                 motname: data.mother_name,
                 religion: data.religion,
+                profile: data.profile,
                 blood_group: data.blood_group,
                 mobile1: data.contact_mobile,
                 mobile2: data.contact_mobile2,

@@ -29,13 +29,77 @@ const validateLogin = async (req, res, next) => {
   }
 };
 
-const validate = (req, res, next) => {
+const validate = async (req, res, next) => {
   if (req.session.auth) {
+    const email = req.session.auth[0].logindetails.email;
+
+    const data = await firebase
+      .firestore()
+      .collection("students")
+      .doc(email)
+      .get()
+      .then((res) => res.data());
+
+    const response = [
+      {
+        logindetails: {
+          StudId: data.StudId,
+          InId: data.InId,
+          SemId: data.SemId,
+          profile: data.profile,
+          DepId: data.DepId,
+          type: data.type,
+          name: data.Name,
+          email: data.Email,
+        },
+        student: {
+          fname: data.Name,
+          lname: data.last_name,
+          gender: data.sex,
+          dob: data.dob,
+          fatname: data.father_name,
+          depname: data.dep_name,
+          motname: data.mother_name,
+          religion: data.religion,
+          profile: data.profile,
+          blood_group: data.blood_group,
+          mobile1: data.contact_mobile,
+          mobile2: data.contact_mobile2,
+          address1: data.contact_address1,
+          address2: data.contact_address2,
+          address3: data.contact_address3,
+          pincode: data.pincode,
+          email: data.Email,
+          disctrict: data.district,
+          state: data.state,
+          country: data.country,
+          community: data.community,
+          admissionNumber: data.admission_number,
+          title: data.title,
+          age: data.age,
+          university: data.university,
+          qualification: data.qualification,
+        },
+      },
+    ];
+
+    req.session.auth = response;
+    req.session.save(function (err) {
+      req.session.reload(function (err) {
+        res.render("index", { title: req.session.auth });
+      });
+    });
+
     return res.status(200).send({
       status: 200,
-      data: req.session.auth,
-      message: "already login",
+      data: response,
+      message: "login successful",
     });
+    // return res.status(200).send({
+    //   status: 200,
+    //   data: req.session.auth,
+    //   message: "already login",
+    // });
   } else {
     next();
   }
