@@ -698,6 +698,41 @@ const GetBillings = async (req, res) => {
   }
 };
 
+const AddFeedBack = (req, res) => {
+  const { InId, DepId, SemId, StudId, Message, Email, Name } = req.body;
+  try {
+    firebase
+      .firestore()
+      .collection(
+        `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/feedback/`
+      )
+      .add({
+        InId: InId.trim(),
+        DepId: DepId.trim(),
+        SemId: SemId.trim(),
+        CratedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        StudId: StudId.trim(),
+        Message: Message.trim(),
+        Email: Email.trim(),
+        Name: Name.trim(),
+      })
+      .then((response) =>
+        res.status(200).send({
+          status: 200,
+          data: "feedback ID:" + " " + response.id,
+        })
+      )
+      .catch((err) =>
+        res.status(500).send({
+          status: 500,
+          err: err,
+        })
+      );
+  } catch (err) {
+    return res.status(400).send({ status: 400, error: err });
+  }
+};
+
 module.exports = {
   loginAccount,
   googleLogin,
@@ -712,4 +747,5 @@ module.exports = {
   GetHolidays,
   GetClasses,
   AddAttendance,
+  AddFeedBack,
 };
