@@ -56,13 +56,13 @@ const verifySession = async (req, res, next) => {
       req.session.reload(() => {
         req.session.auth = response;
       });
-      return res.status(200).send({
+      res.status(200).send({
         status: 200,
         data: response[0],
         message: "login successful",
       });
     }
-    res.send("unathorized");
+    return res.send("unathorized");
   } catch (err) {
     return res.status(400).send({ status: 400, error: err });
   }
@@ -653,6 +653,51 @@ const AddAttendance = async (req, res) => {
   }
 };
 
+const GetBillings = async (req, res) => {
+  const { InId, DepId, SemId, StudId } = req.body;
+  try {
+    const data = await firebase
+      .firestore()
+      .collectionGroup("billings")
+      .where("InId", "==", InId.trim())
+      .where("DepId", "==", DepId.trim())
+      .where("SemId", "==", SemId.trim())
+      .where("students", "array-contains-any", [StudId.trim()])
+      .get()
+      .then((res) =>
+        res.docs.map((doc) => {
+          const data = doc.data();
+          const id = doc.id;
+          return { id, ...data };
+        })
+      );
+
+    if (!data.length) {
+      return res.status(200).send({
+        status: 404,
+        err: "not found!",
+      });
+    }
+
+    return res.status(200).send({
+      status: 200,
+      data: data.map((obj) => ({
+        _id: obj.id,
+        billNo: obj.billNo.toString().trim(),
+        billItem: obj.billItem.toString().trim(),
+        billDescription: obj.billDescription.toString().trim(),
+        amount: parseInt(obj.amount.trim()),
+        dueDate: obj.dueDate.toDate().toDateString().toUpperCase(),
+        pendingAmount: parseInt(obj.outstandingAmount.trim()),
+        paymentStatus: obj.paymentStatus.toString().trim().toUpperCase(),
+        method: obj.method.toString().trim().toUpperCase(),
+      })),
+    });
+  } catch (err) {
+    return res.status(400).send({ status: 400, error: err });
+  }
+};
+
 module.exports = {
   loginAccount,
   googleLogin,
@@ -660,6 +705,7 @@ module.exports = {
   verifySession,
   GetAttendance,
   GetAssignment,
+  GetBillings,
   UploadAssignment,
   GetExams,
   UploadExam,

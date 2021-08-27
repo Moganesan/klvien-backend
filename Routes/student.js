@@ -11,6 +11,7 @@ const {
   GetHolidays,
   GetClasses,
   AddAttendance,
+  GetBillings,
 } = require("../Controllers/studentController");
 const firebase = require("../Config/fire-admin");
 const upload = require("express-fileupload");
@@ -85,22 +86,12 @@ const validate = async (req, res, next) => {
     ];
 
     req.session.auth = response;
-    req.session.save(function (err) {
-      req.session.reload(function (err) {
-        res.render("index", { title: req.session.auth });
-      });
-    });
 
     return res.status(200).send({
       status: 200,
       data: response,
       message: "login successful",
     });
-    // return res.status(200).send({
-    //   status: 200,
-    //   data: req.session.auth,
-    //   message: "already login",
-    // });
   } else {
     next();
   }
@@ -163,4 +154,5 @@ router.post("/classes", GetClasses);
 
 router.post("/attendance/add", AddAttendance);
 
+router.post("/billings", GetBillings);
 module.exports = router;
