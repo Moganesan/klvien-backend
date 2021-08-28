@@ -2,6 +2,7 @@ const session = require("express-session");
 const firebase = require("./Config/fire-admin");
 const express = require("express");
 const studentRoutes = require("./Routes/student");
+const staffRoutes = require("./Routes/staff");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const FirebaseStore = require("connect-session-firebase")(session);
@@ -36,6 +37,8 @@ app.use(
 );
 
 app.use("/student", studentRoutes);
+
+app.use("/staff", staffRoutes);
 
 const PORT = process.env.PORT || 4000;
 

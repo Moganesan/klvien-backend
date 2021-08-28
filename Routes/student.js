@@ -59,7 +59,7 @@ const validate = async (req, res, next) => {
           fname: data.Name,
           lname: data.last_name,
           gender: data.sex,
-          dob: data.dob,
+          dob: data.dob.toDate().toDateString(),
           fatname: data.father_name,
           depname: data.dep_name,
           motname: data.mother_name,
