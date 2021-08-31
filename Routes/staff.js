@@ -5,6 +5,8 @@ const {
   googleLogin,
   createAccount,
   Verify,
+  GetSubjects,
+  GetStudents,
   GetAttendance,
   GetAssignment,
   UploadAssignment,
@@ -15,7 +17,7 @@ const {
   AddAttendance,
   GetBillings,
   AddFeedBack,
-  GetSubjects,
+  GetAssignments,
 } = require("../Controllers/staffController");
 const firebase = require("../Config/fire-admin");
 const upload = require("express-fileupload");
@@ -46,5 +48,13 @@ router.get("/signout", (req, res) => {
 });
 
 router.post("/subjects", GetSubjects);
+
+router.post("/students", GetStudents);
+
+router.post("/assignments", GetAssignments);
+
+router.post("/exams", GetExams);
+
+router.post("/classes", GetClasses);
 
 module.exports = router;
