@@ -33,16 +33,59 @@ const loginAccount = async (req, res, next) => {
             .get()
             .then((res) => res.data());
 
+          const filterOptions = await Promise.all(
+            data.DepId.map(async (depId) => {
+              const serverCall = await firebase
+                .firestore()
+                .collection("institutions")
+                .doc(data.InId)
+                .collection("departments")
+                .doc(depId)
+                .get()
+                .then((res) => res.data())
+                .then(async (res) => {
+                  const depData = [res];
+                  const semData = [];
+                  await Promise.all(
+                    data.SemId.map(async (semId) => {
+                      await firebase
+                        .firestore()
+                        .collection("institutions")
+                        .doc(data.InId)
+                        .collection("departments")
+                        .doc(depId)
+                        .collection("semesters")
+                        .doc(semId)
+                        .get()
+                        .then((res) => {
+                          semData.push(res.data());
+                        });
+                    })
+                  );
+                  return {
+                    depData,
+                    semData,
+                  };
+                });
+              return serverCall;
+            })
+          );
+
           const response = [
             {
               logindetails: {
                 StafId: data.StaffId,
                 InId: data.InId,
                 SemId: data.SemId,
+                SemData: filterOptions[0].semData,
+                filtSem: filterOptions[0].semData.map((sem) => sem.name),
                 profile: data.profile,
                 DepId: data.DepId,
+                DepData: filterOptions[0].depData,
+                filtDep: filterOptions[0].depData.map((dep) => dep.name),
                 type: data.type,
-                name: data.Name,
+                fname: data.firstName,
+                lname: data.lastName,
                 email: data.email,
                 Gauth: data.googleAuth,
               },
@@ -54,7 +97,7 @@ const loginAccount = async (req, res, next) => {
                 religion: data.religion,
                 profile: data.profile,
                 blood_group: data.blood_group,
-                mobile1: data.contact_mobile,
+                mobile1: data.contact_mobile1,
                 mobile2: data.contact_mobile2,
                 address1: data.contact_address1,
                 address2: data.contact_address2,
@@ -111,17 +154,61 @@ const googleLogin = async (req, res) => {
         message: "student not found!",
       });
     }
+
+    const filterOptions = await Promise.all(
+      data.DepId.map(async (depId) => {
+        const serverCall = await firebase
+          .firestore()
+          .collection("institutions")
+          .doc(data.InId)
+          .collection("departments")
+          .doc(depId)
+          .get()
+          .then((res) => res.data())
+          .then(async (res) => {
+            const depData = [res];
+            const semData = [];
+            await Promise.all(
+              data.SemId.map(async (semId) => {
+                await firebase
+                  .firestore()
+                  .collection("institutions")
+                  .doc(data.InId)
+                  .collection("departments")
+                  .doc(depId)
+                  .collection("semesters")
+                  .doc(semId)
+                  .get()
+                  .then((res) => {
+                    semData.push(res.data());
+                  });
+              })
+            );
+            return {
+              depData,
+              semData,
+            };
+          });
+        return serverCall;
+      })
+    );
+
     const response = [
       {
         logindetails: {
           StafId: data.StaffId,
           InId: data.InId,
           SemId: data.SemId,
+          SemData: filterOptions[0].semData,
+          filtSem: filterOptions[0].semData.map((sem) => sem.name),
           profile: data.profile,
           DepId: data.DepId,
+          DepData: filterOptions[0].depData,
+          filtDep: filterOptions[0].depData.map((dep) => dep.name),
           type: data.type,
-          name: data.Name,
-          email: data.Email,
+          fname: data.firstName,
+          lname: data.lastName,
+          email: data.email,
           Gauth: data.googleAuth,
         },
         staff: {
@@ -132,13 +219,13 @@ const googleLogin = async (req, res) => {
           religion: data.religion,
           profile: data.profile,
           blood_group: data.blood_group,
-          mobile1: data.contact_mobile,
+          mobile1: data.contact_mobile1,
           mobile2: data.contact_mobile2,
           address1: data.contact_address1,
           address2: data.contact_address2,
           address3: data.contact_address3,
           pincode: data.pincode,
-          email: data.Email,
+          email: data.email,
           disctrict: data.district,
           state: data.state,
           country: data.country,
@@ -178,6 +265,7 @@ const createAccount = async (req, res) => {
 const Verify = async (req, res, next) => {
   if (req.session.auth) {
     const email = req.session.auth[0].logindetails.email;
+    console.log(email);
 
     const data = await firebase
       .firestore()
@@ -186,14 +274,56 @@ const Verify = async (req, res, next) => {
       .get()
       .then((res) => res.data());
 
+    const filterOptions = await Promise.all(
+      data.DepId.map(async (depId) => {
+        const serverCall = await firebase
+          .firestore()
+          .collection("institutions")
+          .doc(data.InId)
+          .collection("departments")
+          .doc(depId)
+          .get()
+          .then((res) => res.data())
+          .then(async (res) => {
+            const depData = [res];
+            const semData = [];
+            await Promise.all(
+              data.SemId.map(async (semId) => {
+                await firebase
+                  .firestore()
+                  .collection("institutions")
+                  .doc(data.InId)
+                  .collection("departments")
+                  .doc(depId)
+                  .collection("semesters")
+                  .doc(semId)
+                  .get()
+                  .then((res) => {
+                    semData.push(res.data());
+                  });
+              })
+            );
+            return {
+              depData,
+              semData,
+            };
+          });
+        return serverCall;
+      })
+    );
+
     const response = [
       {
         logindetails: {
           StafId: data.StaffId,
           InId: data.InId,
           SemId: data.SemId,
+          SemData: filterOptions[0].semData,
+          filtSem: filterOptions[0].semData.map((sem) => sem.name),
           profile: data.profile,
           DepId: data.DepId,
+          DepData: filterOptions[0].depData,
+          filtDep: filterOptions[0].depData.map((dep) => dep.name),
           type: data.type,
           fname: data.firstName,
           lname: data.lastName,
@@ -236,10 +366,49 @@ const Verify = async (req, res, next) => {
   }
 };
 
+const GetSubjects = async (req, res) => {
+  const { InId, DepId, SemId } = req.body;
+  try {
+    const data = await firebase
+      .firestore()
+      .collection(
+        `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/subjects/`
+      )
+      .get()
+      .then((res) =>
+        res.docs.map((doc) => {
+          const data = doc.data();
+          const id = doc.id;
+          return { id, ...data };
+        })
+      );
+    if (!data.length) {
+      return res.status(404).send({
+        status: 404,
+        err: "not found!",
+      });
+    }
+    return res.status(200).send({
+      status: 200,
+      data: data.map((obj) => ({
+        _id: obj.id,
+        subName: obj.subName,
+        subCategory: obj.subCategory,
+        subIcon: obj.subIcon,
+        crBy: obj.crBy,
+        crAt: obj.crAt.toDate().toDateString(),
+      })),
+    });
+  } catch (err) {
+    return res.status(400).send({ status: 400, error: err });
+  }
+};
+
 module.exports = {
   checkStaff,
   loginAccount,
   googleLogin,
   createAccount,
   Verify,
+  GetSubjects,
 };

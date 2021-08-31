@@ -15,6 +15,7 @@ const {
   AddAttendance,
   GetBillings,
   AddFeedBack,
+  GetSubjects,
 } = require("../Controllers/staffController");
 const firebase = require("../Config/fire-admin");
 const upload = require("express-fileupload");
@@ -43,5 +44,7 @@ router.get("/signout", (req, res) => {
     message: "session destroyed",
   });
 });
+
+router.post("/subjects", GetSubjects);
 
 module.exports = router;
