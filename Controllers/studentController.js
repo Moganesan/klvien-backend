@@ -733,6 +733,10 @@ const AddFeedBack = (req, res) => {
   }
 };
 
+const GetProfile = (req, res) => {
+  res.download(`./Assets/studentProfiles/${req.params.path}`);
+};
+
 module.exports = {
   loginAccount,
   googleLogin,
@@ -748,4 +752,5 @@ module.exports = {
   GetClasses,
   AddAttendance,
   AddFeedBack,
+  GetProfile,
 };

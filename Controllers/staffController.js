@@ -433,9 +433,12 @@ const GetStudents = async (req, res) => {
         name: obj.Name,
         lname: obj.last_name,
         profile: obj.profile,
+        country: obj.country,
+        state: obj.state,
+        pincode: obj.pincode,
         district: obj.district,
         addmisNo: obj.admission_number,
-        InId: obj.inId,
+        InId: obj.InId,
         DepId: obj.DepId,
         depName: obj.dep_name,
         SemId: obj.SemId,
@@ -455,7 +458,7 @@ const GetStudents = async (req, res) => {
         mothMob: obj.mother_mobile,
         age: obj.age,
         qualification: obj.qualification,
-        title: obj.title,
+        title: obj.title.toUpperCase(),
         StudId: obj.StudId,
         googleAuth: obj.googleAuth,
         dob: obj.dob.toDate().toDateString(),
@@ -776,6 +779,55 @@ const GetClasses = async (req, res) => {
     return res.status(400).send({ status: 400, error: err });
   }
 };
+
+const UploadProfile = async (req, res) => {
+  const { name, StudId, InId } = req.body;
+  const file = req.files.file;
+  if (req.files === null) {
+    res.status(400).send({ status: 400, error: "No file uploaded!" });
+  }
+  const fileName = name.split(/\s/).join("");
+
+  const location = `./Assets/studentProfiles/IN${InId}-STUD${StudId}-${fileName}`;
+  file.mv(location, async (err) => {
+    if (err) {
+      console.log(err);
+      return res.status(500).send(err);
+    }
+
+    await firebase
+      .firestore()
+      .collection("students")
+      .where("StudId", "==", StudId.trim())
+      .get()
+      .then((res) => {
+        res.docs.map((doc) => {
+          const data = doc.data();
+          const email = data.Email;
+          firebase
+            .firestore()
+            .collection("/students")
+            .doc(email.trim())
+            .set(
+              {
+                profile: `IN${InId}-STUD${StudId}-${fileName}`,
+              },
+              { merge: true }
+            )
+            .then((res) => console.log(res));
+        });
+      });
+    return res.send({
+      status: 200,
+      message: "success",
+    });
+  });
+};
+
+const GetStudentProfile = (req, res) => {
+  res.download(`./Assets/studentProfiles/${req.params.path}`);
+};
+
 module.exports = {
   checkStaff,
   loginAccount,
@@ -787,4 +839,6 @@ module.exports = {
   GetAssignments,
   GetExams,
   GetClasses,
+  UploadProfile,
+  GetStudentProfile,
 };

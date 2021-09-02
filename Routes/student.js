@@ -13,6 +13,7 @@ const {
   AddAttendance,
   GetBillings,
   AddFeedBack,
+  GetProfile,
 } = require("../Controllers/studentController");
 const firebase = require("../Config/fire-admin");
 const upload = require("express-fileupload");
@@ -158,5 +159,7 @@ router.post("/attendance/add", AddAttendance);
 router.post("/billings", GetBillings);
 
 router.post("/feedback/add", AddFeedBack);
+
+router.get("/getprofile/:path", GetProfile);
 
 module.exports = router;
