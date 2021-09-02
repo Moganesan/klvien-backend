@@ -92,7 +92,7 @@ const loginAccount = async (req, res, next) => {
               staff: {
                 fname: data.firstName,
                 lname: data.lastName,
-                gender: data.sex,
+                gender: data.sex.toUpperCase(),
                 dob: data.dob.toDate().toDateString(),
                 religion: data.religion,
                 profile: data.profile,
@@ -214,7 +214,7 @@ const googleLogin = async (req, res) => {
         staff: {
           fname: data.firstName,
           lname: data.lastName,
-          gender: data.sex,
+          gender: data.sex.toUpperCase(),
           dob: data.dob.toDate().toDateString(),
           religion: data.religion,
           profile: data.profile,
@@ -332,7 +332,7 @@ const Verify = async (req, res, next) => {
         staff: {
           fname: data.firstName,
           lname: data.lastName,
-          gender: data.sex,
+          gender: data.sex.toUpperCase(),
           dob: data.dob.toDate().toDateString(),
           religion: data.religion,
           profile: data.profile,
@@ -444,7 +444,7 @@ const GetStudents = async (req, res) => {
         SemId: obj.SemId,
         semName: obj.sem_name,
         email: obj.Email,
-        sex: obj.sex,
+        sex: obj.sex.toUpperCase(),
         bloodGroup: obj.blood_group,
         contAdd1: obj.contact_address1,
         contAdd2: obj.contact_address2,
@@ -461,7 +461,7 @@ const GetStudents = async (req, res) => {
         title: obj.title.toUpperCase(),
         StudId: obj.StudId,
         googleAuth: obj.googleAuth,
-        dob: obj.dob.toDate().toDateString(),
+        dob: obj.dob.toDate().toLocaleDateString("sv"),
         community: obj.community,
         city: obj.city,
       })),
@@ -510,7 +510,7 @@ const GetAssignments = async (req, res) => {
                           depName: data.dep_name,
                           SemId: data.SemId,
                           email: data.Email,
-                          sex: data.sex,
+                          sex: data.sex.toUpperCase(),
                           bloodGroup: data.blood_group,
                           contAdd1: data.contact_address1,
                           contAdd2: data.contact_address2,
@@ -609,7 +609,7 @@ const GetExams = async (req, res) => {
                           depName: data.dep_name,
                           SemId: data.SemId,
                           email: data.Email,
-                          sex: data.sex,
+                          sex: data.sex.toUpperCase(),
                           bloodGroup: data.blood_group,
                           contAdd1: data.contact_address1,
                           contAdd2: data.contact_address2,
@@ -712,7 +712,7 @@ const GetClasses = async (req, res) => {
                           depName: data.dep_name,
                           SemId: data.SemId,
                           email: data.Email,
-                          sex: data.sex,
+                          sex: data.sex.toUpperCase(),
                           bloodGroup: data.blood_group,
                           contAdd1: data.contact_address1,
                           contAdd2: data.contact_address2,
@@ -782,46 +782,55 @@ const GetClasses = async (req, res) => {
 
 const UploadProfile = async (req, res) => {
   const { name, StudId, InId } = req.body;
-  const file = req.files.file;
-  if (req.files === null) {
-    res.status(400).send({ status: 400, error: "No file uploaded!" });
-  }
-  const fileName = name.split(/\s/).join("");
 
-  const location = `./Assets/studentProfiles/IN${InId}-STUD${StudId}-${fileName}`;
-  file.mv(location, async (err) => {
-    if (err) {
-      console.log(err);
-      return res.status(500).send(err);
-    }
+  try {
+    if (name && StudId && InId) {
+      const file = req.files.file;
+      if (req.files === null) {
+        return res
+          .status(400)
+          .send({ status: 400, error: "No file uploaded!" });
+      }
+      const fileName = name.split(/\s/).join("");
 
-    await firebase
-      .firestore()
-      .collection("students")
-      .where("StudId", "==", StudId.trim())
-      .get()
-      .then((res) => {
-        res.docs.map((doc) => {
-          const data = doc.data();
-          const email = data.Email;
-          firebase
-            .firestore()
-            .collection("/students")
-            .doc(email.trim())
-            .set(
-              {
-                profile: `IN${InId}-STUD${StudId}-${fileName}`,
-              },
-              { merge: true }
-            )
-            .then((res) => console.log(res));
+      const location = `./Assets/studentProfiles/IN${InId}-STUD${StudId}-${fileName}`;
+      file.mv(location, async (err) => {
+        if (err) {
+          console.log(err);
+          return res.status(500).send(err);
+        }
+
+        await firebase
+          .firestore()
+          .collection("students")
+          .where("StudId", "==", StudId.trim())
+          .get()
+          .then((res) => {
+            res.docs.map((doc) => {
+              const data = doc.data();
+              const email = data.Email;
+              firebase
+                .firestore()
+                .collection("/students")
+                .doc(email.trim())
+                .set(
+                  {
+                    profile: `IN${InId}-STUD${StudId}-${fileName}`,
+                  },
+                  { merge: true }
+                )
+                .then((res) => console.log(res));
+            });
+          });
+        return res.send({
+          status: 200,
+          message: "success",
         });
       });
-    return res.send({
-      status: 200,
-      message: "success",
-    });
-  });
+    }
+  } catch (err) {
+    return res.status(400).send({ status: 400, error: err });
+  }
 };
 
 const GetStudentProfile = (req, res) => {
