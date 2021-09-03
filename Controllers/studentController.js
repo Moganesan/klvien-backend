@@ -128,6 +128,7 @@ const loginAccount = async (req, res, next) => {
             },
           ];
           req.session.auth = response;
+          console.log(req.session);
           return res.status(200).send({
             status: 200,
             data: response[0],
