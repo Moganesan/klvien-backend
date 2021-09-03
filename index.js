@@ -26,24 +26,19 @@ const SessionDB = new FirebaseStore({
   database: firebase.database(),
 });
 
-const sessionConfig = {
-  secret: process.env.SESSION_KEY,
-  resave: false,
-  saveUninitialized: false,
-  store: SessionDB,
-  cookie: {
-    sameSite: "strict",
-    name: "auth",
-    maxAge: 60 * 60 * 24 * 5 * 1000,
-  },
-};
-
-if (process.env.NODE_ENV === "production") {
-  app.set("trust proxy", 1); // trust first proxy
-  sessionConfig.cookie.secure = true; // serve secure cookies
-}
-
-app.use(session(sessionConfig));
+app.use(
+  session({
+    secret: process.env.SESSION_KEY,
+    resave: false,
+    saveUninitialized: false,
+    store: SessionDB,
+    cookie: {
+      sameSite: "strict",
+      name: "auth",
+      maxAge: 60 * 60 * 24 * 5 * 1000,
+    },
+  })
+);
 
 app.use("/student", studentRoutes);
 
