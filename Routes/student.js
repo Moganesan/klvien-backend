@@ -36,7 +36,6 @@ const validateLogin = async (req, res, next) => {
 const validate = async (req, res, next) => {
   if (req.session.auth) {
     const email = req.session.auth[0].logindetails.email;
-
     const data = await firebase
       .firestore()
       .collection("students")
@@ -86,8 +85,6 @@ const validate = async (req, res, next) => {
         },
       },
     ];
-
-    req.session.auth = response;
 
     return res.status(200).send({
       status: 200,
