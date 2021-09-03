@@ -4,7 +4,8 @@
   "description": "next generation education system",
   "main": "index.js",
   "scripts": {
-    "test": "npm start"
+    "test": "npm start",
+    "start": "node index.js"
   },
   "keywords": [
     "klvien"
