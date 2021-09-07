@@ -7,6 +7,8 @@ const {
   Verify,
   GetSubjects,
   GetStudents,
+  CreateStudent,
+  UpdateStudent,
   GetAttendance,
   GetAssignment,
   UploadAssignment,
@@ -33,6 +35,7 @@ router.post("/googleLogin", checkStaff, googleLogin);
 router.post("/signup", checkStaff, createAccount);
 
 router.get("/verify", Verify, (req, res) => {
+  console.log(req.session);
   return res.status(401).send({
     status: 401,
     data: null,
@@ -59,8 +62,12 @@ router.post("/exams", GetExams);
 
 router.post("/classes", GetClasses);
 
-router.post("/student/uplodprofile", UploadProfile);
+router.post("/student/uploadprofile", UploadProfile);
 
 router.get("/student/getprofile/:path", GetStudentProfile);
+
+router.post("/student/update", UpdateStudent);
+
+router.post("/student/create", CreateStudent);
 
 module.exports = router;

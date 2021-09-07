@@ -14,11 +14,16 @@ const app = express();
 
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:3001"],
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:4000",
+    ],
     method: ["GET", "POST"],
     credentials: true,
   })
 );
+
 app.use(cookieParser());
 app.use(bodyParser());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -38,6 +43,10 @@ app.use(
     },
   })
 );
+
+app.get("/", (req, res) => {
+  res.send(`Server Running On PORT: ${PORT}`);
+});
 
 app.use("/student", studentRoutes);
 

@@ -427,43 +427,58 @@ const GetStudents = async (req, res) => {
         err: "not found!",
       });
     }
+    console.log(data.map((obj) => obj));
     return res.status(200).send({
       status: 200,
       data: data.map((obj) => ({
-        name: obj.Name,
-        lname: obj.last_name,
-        profile: obj.profile,
-        country: obj.country,
-        state: obj.state,
-        pincode: obj.pincode,
-        district: obj.district,
-        addmisNo: obj.admission_number,
-        InId: obj.InId,
-        DepId: obj.DepId,
-        depName: obj.dep_name,
-        SemId: obj.SemId,
-        semName: obj.sem_name,
-        email: obj.Email,
-        sex: obj.sex.toUpperCase(),
-        bloodGroup: obj.blood_group,
-        contAdd1: obj.contact_address1,
-        contAdd2: obj.contact_address2,
-        contAdd3: obj.contact_address3,
-        contMob: obj.contact_mobile,
-        fathName: obj.father_name,
-        fathOccu: obj.father_occupation,
-        fathMob: obj.father_mobile,
-        mothName: obj.mother_name,
-        mothOccu: obj.mother_occupation,
-        mothMob: obj.mother_mobile,
-        age: obj.age,
-        qualification: obj.qualification,
-        title: obj.title.toUpperCase(),
-        StudId: obj.StudId,
+        InId: obj.InId.trim(),
+        DepId: obj.DepId.trim(),
+        SemId: obj.SemId.trim(),
+        StudId: obj.StudId.trim(),
+        name: obj.name.trim(),
+        email: obj.email.trim(),
+        gender: obj.gender.trim(),
+        profile: obj.profile.trim(),
+        bloodGroup: obj.bloodGroup.trim(),
+        religion: obj.religion.trim(),
+        title: obj.title.trim(),
+        country: obj.country.trim(),
+        state: obj.state.trim(),
+        district: obj.district.trim(),
+        contMob: obj.contMob.trim(),
+        age: obj.age.trim(),
+        qualification: obj.qualification.trim(),
+        dob: obj.dob.toDate().toDateString(),
+        pincode: obj.pincode.trim(),
+        fathName: obj.fathName.trim(),
+        fathOccu: obj.fathOccu.trim(),
+        fathMob: obj.fathMob.trim(),
+        mothName: obj.mothName.trim(),
+        mothOccu: obj.mothOccu.trim(),
+        mothMob: obj.mothMob.trim(),
+        community: obj.community.trim(),
+        institution: {
+          name: obj.institution.name,
+          email: obj.institution.email,
+          address1: obj.institution.address1,
+          address2: obj.institution.address2,
+          address3: obj.institution.address3,
+          country: obj.institution.country,
+          state: obj.institution.state,
+          district: obj.institution.district,
+          postalCode: obj.institution.postalCode,
+          phone: obj.institution.phone,
+        },
+        crAt: obj.crAt.toDate().toDateString(),
+        modAt: obj.modAt.toDate().toDateString(),
+        depName: obj.depName.trim(),
         googleAuth: obj.googleAuth,
-        dob: obj.dob.toDate().toLocaleDateString("sv"),
-        community: obj.community,
-        city: obj.city,
+        type: obj.type.trim(),
+        semName: obj.semName.trim(),
+        contactAddress1: obj.contactAddress1.trim(),
+        contactAddress2: obj.contactAddress2.trim(),
+        contactAddress3: obj.contactAddress3.trim(),
+        addmisNo: obj.addmisNo.trim(),
       })),
       items: Object.keys(data).length,
     });
@@ -793,43 +808,410 @@ const UploadProfile = async (req, res) => {
       }
       const fileName = name.split(/\s/).join("");
 
-      const location = `./Assets/studentProfiles/IN${InId}-STUD${StudId}-${fileName}`;
-      file.mv(location, async (err) => {
-        if (err) {
-          console.log(err);
-          return res.status(500).send(err);
-        }
-
-        await firebase
-          .firestore()
-          .collection("students")
-          .where("StudId", "==", StudId.trim())
-          .get()
-          .then((res) => {
-            res.docs.map((doc) => {
-              const data = doc.data();
-              const email = data.Email;
+      await firebase
+        .firestore()
+        .collection("students")
+        .where("StudId", "==", StudId.trim())
+        .get()
+        .then((res) => {
+          res.docs.map((doc) => {
+            const data = doc.data();
+            const email = data.Email;
+            const location = `./Assets/studentProfiles/IN${InId}-STUD${email}-${fileName}`;
+            file.mv(location, async (err) => {
+              if (err) {
+                console.log(err);
+                return res.status(500).send(err);
+              }
               firebase
                 .firestore()
                 .collection("/students")
                 .doc(email.trim())
                 .set(
                   {
-                    profile: `IN${InId}-STUD${StudId}-${fileName}`,
+                    profile: `IN${InId}-STUD${email}-${fileName}`,
                   },
                   { merge: true }
                 )
                 .then((res) => console.log(res));
             });
           });
-        return res.send({
-          status: 200,
-          message: "success",
+          return res.send({
+            status: 200,
+            message: "success",
+          });
         });
+    }
+  } catch (err) {
+    return res.status(400).send({ status: 400, error: err });
+  }
+};
+
+const UpdateStudent = async (req, res) => {
+  const { InId, DepId, SemId, StudId, Data } = req.body;
+
+  try {
+    if (InId && DepId && SemId && StudId) {
+      await firebase
+        .firestore()
+        .collection("students")
+        .where("InId", "==", InId.trim())
+        .where("DepId", "==", DepId.trim())
+        .where("SemId", "==", SemId.trim())
+        .where("StudId", "==", StudId.trim())
+        .get()
+        .then((res) => {
+          res.docs.map((doc) => {
+            const data = doc.data();
+            const email = data.Email;
+            firebase
+              .firestore()
+              .collection("/students")
+              .doc(email.trim())
+              .set(
+                {
+                  mother_occupation: Data.map((obj) =>
+                    obj.id === "mothOccu" ? obj.value : null
+                  )
+                    .filter((c) => c != null)
+                    .toString(),
+                  district: Data.map((obj) =>
+                    obj.id === "district" ? obj.value : null
+                  )
+                    .filter((c) => c != null)
+                    .toString(),
+                  mother_name: Data.map((obj) =>
+                    obj.id === "mothName" ? obj.value : null
+                  )
+                    .filter((c) => c != null)
+                    .toString(),
+                  sex: Data.map((obj) =>
+                    obj.id === "gender" ? obj.value : null
+                  )
+                    .filter((c) => c != null)
+                    .toString(),
+                  dob: (date = Data.map((obj) =>
+                    obj.id === "dob"
+                      ? firebase.firestore.Timestamp.fromMillis(
+                          new Date(obj.value + " " + "12:00:00:AM")
+                        )
+                      : null
+                  ).filter((c) => c != null))[0],
+
+                  contact_mobile: Data.map((obj) =>
+                    obj.id === "contMob" ? obj.value : null
+                  )
+                    .filter((c) => c != null)
+                    .toString(),
+                  Name: Data.map((obj) =>
+                    obj.id === "name" ? obj.value : null
+                  )
+                    .filter((c) => c != null)
+                    .toString(),
+                  email: Data.map((obj) =>
+                    obj.id === "email" ? obj.value : null
+                  )
+                    .filter((c) => c != null)
+                    .toString(),
+                  father_mobile: Data.map((obj) =>
+                    obj.id === "fathMob" ? obj.value : null
+                  )
+                    .filter((c) => c != null)
+                    .toString(),
+                  age: Data.map((obj) => (obj.id === "age" ? obj.value : null))
+                    .filter((c) => c != null)
+                    .toString(),
+                  father_name: Data.map((obj) =>
+                    obj.id === "fathName" ? obj.value : null
+                  )
+                    .filter((c) => c != null)
+                    .toString(),
+                  country: Data.map((obj) =>
+                    obj.id === "country" ? obj.value : null
+                  )
+                    .filter((c) => c != null)
+                    .toString(),
+                  modAt: firebase.firestore.FieldValue.serverTimestamp(),
+                  qualification: Data.map((obj) =>
+                    obj.id === "qualification" ? obj.value : null
+                  )
+                    .filter((c) => c != null)
+                    .toString(),
+                  blood_group: Data.map((obj) =>
+                    obj.id === "bloodGroup" ? obj.value : null
+                  )
+                    .filter((c) => c != null)
+                    .toString(),
+                  pincode: Data.map((obj) =>
+                    obj.id === "pincode" ? obj.value : null
+                  )
+                    .filter((c) => c != null)
+                    .toString(),
+                  admission_number: Data.map((obj) =>
+                    obj.id === "addmisNo" ? obj.value : null
+                  )
+                    .filter((c) => c != null)
+                    .toString(),
+                  father_occupation: Data.map((obj) =>
+                    obj.id === "fathOccu" ? obj.value : null
+                  )
+                    .filter((c) => c != null)
+                    .toString(),
+                  Email: Data.map((obj) =>
+                    obj.id === "email" ? obj.value : null
+                  )
+                    .filter((c) => c != null)
+                    .toString(),
+                  state: Data.map((obj) =>
+                    obj.id === "state" ? obj.value : null
+                  )
+                    .filter((c) => c != null)
+                    .toString(),
+                  mother_mobile: Data.map((obj) =>
+                    obj.id === "mothMob" ? obj.value : null
+                  )
+                    .filter((c) => c != null)
+                    .toString(),
+                },
+                { merge: true }
+              )
+              .catch((err) =>
+                res.status(500).send({ status: 500, error: err })
+              );
+          });
+        });
+      return res.send({
+        status: 200,
+        message: "success",
       });
     }
   } catch (err) {
     return res.status(400).send({ status: 400, error: err });
+  }
+};
+
+const CreateStudent = async (req, res) => {
+  const data = JSON.parse(req.body.data);
+  const InId = req.body.InId;
+  if (data.length) {
+    try {
+      await firebase
+        .firestore()
+        .collection("institutions")
+        .where("_id", "==", InId.trim())
+        .get()
+        .then((res) => {
+          res.docs.map(async (doc) => {
+            const InData = doc.data();
+
+            const profile = req.files.profile;
+            const name = profile.name;
+            if (req.files === null) {
+              return res
+                .status(400)
+                .send({ status: 400, error: "No file uploaded!" });
+            }
+            const fileName = name.split(/\s/).join("");
+
+            const location = `./Assets/studentProfiles/IN${InId}-STUD${data
+              .map((input) => (input.id == "email" ? input.value : null))
+              .filter((c) => c != null)
+              .toString()
+              .trim()}-${fileName}`;
+            profile.mv(location, async (err) => {
+              if (err) {
+                console.log(err);
+                return res.status(500).send(err);
+              }
+            });
+
+            await firebase
+              .firestore()
+              .collection("students")
+              .doc(
+                data
+                  .map((input) => (input.id == "email" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString()
+                  .trim()
+              )
+              .set({
+                InId: InId.trim().toString(),
+                DepId: data
+                  .map((input) =>
+                    input.id == "department" ? input.value._id : null
+                  )
+                  .filter((c) => c != null)
+                  .toString()
+                  .trim(),
+                SemId: data
+                  .map((input) =>
+                    input.id == "semester" ? input.value._id : null
+                  )
+                  .filter((c) => c != null)
+                  .toString()
+                  .trim(),
+                StudId: "",
+                name: data
+                  .map((input) => (input.id == "name" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString(),
+                email: data
+                  .map((input) => (input.id == "email" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString(),
+                gender: data
+                  .map((input) => (input.id == "gender" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString(),
+                profile: `IN${InId}-STUD${data
+                  .map((input) => (input.id == "email" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString()
+                  .trim()}-${fileName}`,
+                bloodGroup: data
+                  .map((input) =>
+                    input.id == "bloodGroup" ? input.value : null
+                  )
+                  .filter((c) => c != null)
+                  .toString(),
+                religion: data
+                  .map((input) => (input.id == "religion" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString(),
+                title: data
+                  .map((input) => (input.id == "title" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString(),
+                country: data
+                  .map((input) => (input.id == "country" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString(),
+                state: data
+                  .map((input) => (input.id == "state" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString(),
+                district: data
+                  .map((input) => (input.id == "district" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString(),
+                contMob: data
+                  .map((input) => (input.id == "contMob" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString(),
+                age: data
+                  .map((input) => (input.id == "age" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString(),
+                qualification: data
+                  .map((input) =>
+                    input.id == "qualification" ? input.value : null
+                  )
+                  .filter((c) => c != null)
+                  .toString(),
+                dob: (date = data
+                  .map((obj) =>
+                    obj.id === "dob"
+                      ? firebase.firestore.Timestamp.fromMillis(
+                          new Date(obj.value + " " + "12:00:00:AM")
+                        )
+                      : null
+                  )
+                  .filter((c) => c != null))[0],
+                pincode: data
+                  .map((input) => (input.id == "pincode" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString(),
+                fathName: data
+                  .map((input) => (input.id == "fathName" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString(),
+                fathOccu: data
+                  .map((input) => (input.id == "fathOccu" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString(),
+                fathMob: data
+                  .map((input) => (input.id == "fathMob" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString(),
+                mothName: data
+                  .map((input) => (input.id == "mothName" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString(),
+                mothOccu: data
+                  .map((input) => (input.id == "mothOccu" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString(),
+                mothMob: data
+                  .map((input) => (input.id == "mothMob" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString(),
+                community: data
+                  .map((input) =>
+                    input.id == "community" ? input.value : null
+                  )
+                  .filter((c) => c != null)
+                  .toString(),
+                institution: {
+                  name: InData.name,
+                  email: InData.email,
+                  address1: InData.address1,
+                  address2: InData.address2,
+                  address3: InData.address3,
+                  country: InData.country,
+                  state: InData.state,
+                  district: InData.district,
+                  postalCode: InData.postalCode,
+                  phone: InData.phone,
+                },
+                crAt: firebase.firestore.FieldValue.serverTimestamp(),
+                modAt: firebase.firestore.FieldValue.serverTimestamp(),
+                depName: data
+                  .map((input) =>
+                    input.id == "department" ? input.value.name : null
+                  )
+                  .filter((c) => c != null)
+                  .toString()
+                  .trim(),
+                googleAuth: false,
+                type: "student",
+                semName: data
+                  .map((input) =>
+                    input.id == "semester" ? input.value.name : null
+                  )
+                  .filter((c) => c != null)
+                  .toString()
+                  .trim(),
+                contactAddress1: data
+                  .map((input) =>
+                    input.id == "contactAddress1" ? input.value : null
+                  )
+                  .filter((c) => c != null)
+                  .toString(),
+                contactAddress2: data
+                  .map((input) =>
+                    input.id == "contactAddress2" ? input.value : null
+                  )
+                  .filter((c) => c != null)
+                  .toString(),
+                contactAddress3: data
+                  .map((input) =>
+                    input.id == "contactAddress3" ? input.value : null
+                  )
+                  .filter((c) => c != null)
+                  .toString(),
+                addmisNo: data
+                  .map((input) => (input.id == "addmisNo" ? input.value : null))
+                  .filter((c) => c != null)
+                  .toString(),
+              });
+          });
+        });
+
+      res.send("succes");
+    } catch (err) {
+      return res.status(400).send({ status: 400, error: err });
+    }
   }
 };
 
@@ -845,6 +1227,8 @@ module.exports = {
   Verify,
   GetSubjects,
   GetStudents,
+  CreateStudent,
+  UpdateStudent,
   GetAssignments,
   GetExams,
   GetClasses,

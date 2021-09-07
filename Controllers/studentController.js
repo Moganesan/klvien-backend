@@ -277,42 +277,44 @@ const GetAttendance = async (req, res) => {
 const GetAssignment = async (req, res) => {
   const { InId, DepId, SemId, StudId } = req.body;
   try {
-    const data = await firebase
-      .firestore()
-      .collectionGroup("assignments")
-      .where("InId", "==", InId.trim())
-      .where("DepId", "==", DepId.trim())
-      .where("SemId", "==", SemId.trim())
-      .where("students", "array-contains-any", [StudId.trim()])
-      .get()
-      .then((res) =>
-        res.docs.map((doc) => {
-          const data = doc.data();
-          const id = doc.id;
-          return { id, ...data };
-        })
-      );
+    if (InId && DepId && SemId && StudId) {
+      const data = await firebase
+        .firestore()
+        .collectionGroup("assignments")
+        .where("InId", "==", InId.trim())
+        .where("DepId", "==", DepId.trim())
+        .where("SemId", "==", SemId.trim())
+        .where("students", "array-contains-any", [StudId.trim()])
+        .get()
+        .then((res) =>
+          res.docs.map((doc) => {
+            const data = doc.data();
+            const id = doc.id;
+            return { id, ...data };
+          })
+        );
 
-    if (!data.length) {
-      return res.status(404).send({
-        status: 404,
-        err: "not found!",
+      if (!data.length) {
+        return res.status(404).send({
+          status: 404,
+          err: "not found!",
+        });
+      }
+      return res.status(200).send({
+        status: 200,
+        data: data.map((data) => ({
+          _id: data.id.toString().trim(),
+          startingDate: data.startingDate.toDate().toDateString(),
+          endingDate: data.endingDate.toDate().toDateString(),
+          project: data.Project.toString().trim(),
+          status: data.studentsStatus[StudId].status
+            .toString()
+            .toUpperCase()
+            .trim(),
+          description: data.Descriptions.trim(),
+        })),
       });
     }
-    return res.status(200).send({
-      status: 200,
-      data: data.map((data) => ({
-        _id: data.id.toString().trim(),
-        startingDate: data.startingDate.toDate().toDateString(),
-        endingDate: data.endingDate.toDate().toDateString(),
-        project: data.Project.toString().trim(),
-        status: data.studentsStatus[StudId].status
-          .toString()
-          .toUpperCase()
-          .trim(),
-        description: data.Descriptions.trim(),
-      })),
-    });
   } catch (err) {
     return res.status(400).send({ status: 400, error: err });
   }
