@@ -1,70 +1,97 @@
 const firebase = require("../Config/fire-admin");
 
-const verifySession = async (req, res, next) => {
-  try {
-    if (req.session.auth) {
-      const data = await firebase
-        .firestore()
-        .collection("students")
-        .doc(email)
-        .get()
-        .then((res) => res.data());
+const verify = async (req, res, next) => {
+  if (req.session.auth) {
+    const email = req.session.auth[0].logindetails.email;
+    const data = await firebase
+      .firestore()
+      .collection("students")
+      .doc(email)
+      .get()
+      .then((res) => res.data());
 
-      const response = [
-        {
-          logindetails: {
-            StudId: data.StudId,
-            InId: data.InId,
-            SemId: data.SemId,
-            DepId: data.DepId,
-            type: data.type,
-            name: data.Name,
-            email: data.Email,
-            Gauth: data.googleAuth,
-          },
-          token: decodedToken,
-          student: {
-            fname: data.Name,
-            lname: data.last_name,
-            gender: data.sex,
-            dob: data.dob.toDate().toDateString(),
-            profile: decodedToken.picture,
-            fatname: data.father_name,
-            depname: data.dep_name,
-            motname: data.mother_name,
-            religion: data.religion,
-            blood_group: data.blood_group,
-            mobile1: data.contact_mobile,
-            mobile2: data.contact_mobile2,
-            address1: data.contact_address1,
-            address2: data.contact_address2,
-            address3: data.contact_address3,
-            pincode: data.pincode,
-            email: data.Email,
-            disctrict: data.district,
-            state: data.state,
-            country: data.country,
-            community: data.community,
-            admissionNumber: data.admission_number,
-            title: data.title,
-            age: data.age,
-            university: data.university,
-            qualification: data.qualification,
-          },
+    const institution = await firebase
+      .firestore()
+      .collection("institutions")
+      .doc(data.InId.trim())
+      .get()
+      .then((res) => res.data());
+
+    const response = [
+      {
+        logindetails: {
+          StudId: data.StudId.trim(),
+          InId: data.InId.trim(),
+          SemId: data.SemId.trim(),
+          profile: data.profile.trim(),
+          DepId: data.DepId.trim(),
+          type: data.type.trim(),
+          firstName: data.firstName.trim(),
+          lastName: data.lastName.trim(),
+          email: data.email.trim(),
+          googleAuth: data.googleAuth,
         },
-      ];
-      req.session.reload(() => {
-        req.session.auth = response;
-      });
-      res.status(200).send({
-        status: 200,
-        data: response[0],
-        message: "login successful",
-      });
-    }
-    return res.send("unathorized");
-  } catch (err) {
-    return res.status(400).send({ status: 400, error: err });
+        student: {
+          InId: data.InId,
+          DepId: data.DepId,
+          SemId: data.SemId,
+          StudId: data.StudId,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          gender: data.gender,
+          profile: data.profile,
+          bloodGroup: data.bloodGroup,
+          religion: data.religion,
+          title: data.title,
+          country: data.country,
+          state: data.state,
+          district: data.district,
+          contMob: data.contMob,
+          age: data.age,
+          qualification: data.qualification,
+          dob: data.dob.toDate().toDateString(),
+          pincode: data.pincode,
+          fathName: data.fathName,
+          fathOccu: data.fathOccu,
+          fathMob: data.fathMob,
+          mothName: data.mothName,
+          mothOccu: data.mothOccu,
+          mothMob: data.mothMob,
+          community: data.community,
+          institution: {
+            name: institution.name,
+            email: institution.email,
+            address1: institution.address1,
+            address2: institution.address2,
+            address3: institution.address3,
+            country: institution.country,
+            state: institution.state,
+            district: institution.district,
+            postalCode: institution.postalCode,
+            phone: institution.phone,
+          },
+          crAt: data.crAt.toDate().toDateString(),
+          modAt: data.modAt.toDate().toDateString(),
+          depName: data.depName,
+          googleAuth: data.googleAuth,
+          type: data.type,
+          semName: data.semName,
+          contactAddress1: data.contactAddress1,
+          contactAddress2: data.contactAddress2,
+          contactAddress3: data.contact_address3,
+          addmisNo: data.addmisNo,
+        },
+      },
+    ];
+    req.session.auth = response;
+    return res.status(200).send({
+      status: 200,
+      data: response[0],
+      message: "login successful!",
+    });
+  } else {
+    next();
   }
 };
 
@@ -77,6 +104,8 @@ const loginAccount = async (req, res, next) => {
         .verifyIdToken(IdToken)
         .then(async (decodedToken) => {
           const email = decodedToken.email;
+
+          //get student
           const data = await firebase
             .firestore()
             .collection("students")
@@ -84,51 +113,84 @@ const loginAccount = async (req, res, next) => {
             .get()
             .then((res) => res.data());
 
+          //get institute data
+          const institution = await firebase
+            .firestore()
+            .collection("institutions")
+            .doc(data.InId.trim())
+            .get()
+            .then((res) => res.data());
+
           const response = [
             {
               logindetails: {
-                StudId: data.StudId,
-                InId: data.InId,
-                SemId: data.SemId,
-                profile: data.profile,
-                DepId: data.DepId,
-                type: data.type,
-                name: data.Name,
-                email: data.Email,
-                Gauth: data.googleAuth,
+                StudId: data.StudId.trim(),
+                InId: data.InId.trim(),
+                DepId: data.DepId.trim(),
+                SemId: data.SemId.trim(),
+                profile: data.profile.trim(),
+                type: data.type.trim(),
+                firstName: data.firstName.trim(),
+                lastName: data.lastName.trim(),
+                email: data.email.trim(),
+                googleAuth: data.googleAuth,
               },
               student: {
-                fname: data.Name,
-                lname: data.last_name,
-                gender: data.sex,
-                dob: data.dob.toDate().toDateString(),
-                fatname: data.father_name,
-                depname: data.dep_name,
-                motname: data.mother_name,
-                religion: data.religion,
+                InId: data.InId,
+                DepId: data.DepId,
+                SemId: data.SemId,
+                StudId: data.StudId,
+                firstName: data.firstName,
+                lastName: data.lastName,
+                email: data.email,
+                gender: data.gender,
                 profile: data.profile,
-                blood_group: data.blood_group,
-                mobile1: data.contact_mobile,
-                mobile2: data.contact_mobile2,
-                address1: data.contact_address1,
-                address2: data.contact_address2,
-                address3: data.contact_address3,
-                pincode: data.pincode,
-                email: data.Email,
-                disctrict: data.district,
-                state: data.state,
-                country: data.country,
-                community: data.community,
-                admissionNumber: data.admission_number,
+                bloodGroup: data.bloodGroup,
+                religion: data.religion,
                 title: data.title,
+                country: data.country,
+                state: data.state,
+                district: data.district,
+                contMob: data.contMob,
                 age: data.age,
-                university: data.university,
                 qualification: data.qualification,
+                dob: data.dob.toDate().toDateString(),
+                pincode: data.pincode,
+                fathName: data.fathName,
+                fathOccu: data.fathOccu,
+                fathMob: data.fathMob,
+                mothName: data.mothName,
+                mothOccu: data.mothOccu,
+                mothMob: data.mothMob,
+                community: data.community,
+                institution: {
+                  name: institution.name,
+                  email: institution.email,
+                  address1: institution.address1,
+                  address2: institution.address2,
+                  address3: institution.address3,
+                  country: institution.country,
+                  state: institution.state,
+                  district: institution.district,
+                  postalCode: institution.postalCode,
+                  phone: institution.phone,
+                },
+                crAt: data.crAt.toDate().toDateString(),
+                modAt: data.modAt.toDate().toDateString(),
+                depName: data.depName,
+                googleAuth: data.googleAuth,
+                type: data.type,
+                semName: data.semName,
+                contactAddress1: data.contactAddress1,
+                contactAddress2: data.contactAddress2,
+                contactAddress3: data.contact_address3,
+                addmisNo: data.addmisNo,
               },
             },
           ];
+
           req.session.auth = response;
-          console.log(req.session);
+
           return res.status(200).send({
             status: 200,
             data: response[0],
@@ -226,13 +288,193 @@ const googleLogin = async (req, res) => {
 const createAccount = async (req, res) => {
   const { email, password } = req.body;
   try {
-    const user = await auth
-      .createUserWithEmailAndPassword(email, password)
-      .then((response) => response.user);
-    await auth.signOut();
-    return res
-      .status(200)
-      .send({ status: 200, data: user, message: "success" });
+    if (email && password) {
+      await firebase
+        .auth()
+        .createUser({
+          email: email.trim(),
+          password: password.trim(),
+        })
+        .then(async (user) => {
+          //update student ID
+          await firebase
+            .firestore()
+            .collection("students")
+            .doc(email.trim())
+            .set(
+              {
+                StudId: user.uid,
+              },
+              { merge: true }
+            );
+
+          //get student data
+          const data = await firebase
+            .firestore()
+            .collection("students")
+            .doc(email.trim())
+            .get()
+            .then((res) => res.data());
+
+          //get institute data
+          const institution = await firebase
+            .firestore()
+            .collection("institutions")
+            .doc(data.InId.trim())
+            .get()
+            .then((res) => res.data());
+
+          //add new student to institute
+          await firebase
+            .firestore()
+            .collection("institutions")
+            .doc(data.InId.trim())
+            .set(
+              {
+                students: [...institution.students, user.uid],
+              },
+              { merge: true }
+            );
+
+          //add student to database
+          await firebase
+            .firestore()
+            .collection(
+              `/institutions/${data.InId.trim()}/departments/${data.DepId.trim()}/students/`
+            )
+            .doc(user.uid.trim())
+            .set(data);
+
+          //get subjects
+          const subjects = await firebase
+            .firestore()
+            .collection(
+              `/institutions/${data.InId.trim()}/departments/${data.DepId.trim()}/semesters/${data.SemId.trim()}/subjects/`
+            )
+            .get()
+            .then((res) =>
+              res.docs.map((doc) => {
+                const data = doc.data();
+                const id = doc.id;
+                return { _id: id, ...data };
+              })
+            );
+
+          //add attendance
+          await firebase
+            .firestore()
+            .collection(
+              `/institutions/${data.InId.trim()}/departments/${data.DepId.trim()}/semesters/${data.SemId.trim()}/attendance/`
+            )
+            .doc(data.StudId.trim())
+            .set({
+              DepId: data.DepId.trim(),
+              InId: data.InId.trim(),
+              SemId: data.SemId.trim(),
+              StudId: data.StudId.trim(),
+              currentMonthPercentage: 0,
+              overAllPeriods: 0,
+              overAllPrecent: 0,
+              overAllPercentage: 0,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+              subjectList: subjects.map((subject) => {
+                return {
+                  SubId: subject._id,
+                  subName: subject.subName,
+                  subCode: subject.subCode,
+                  crAt: subject.crAt,
+                  crBy: subject.crBy,
+                  classes: {},
+                  currentMonthPercentage: 0,
+                  overAllPercentage: 0,
+                  overAllPeriods: 0,
+                  overAllPrecent: 0,
+                };
+              }),
+            });
+
+          const response = [
+            {
+              logindetails: {
+                StudId: data.StudId.trim(),
+                InId: data.InId.trim(),
+                DepId: data.DepId.trim(),
+                SemId: data.SemId.trim(),
+                profile: data.profile.trim(),
+                type: data.type.trim(),
+                firstName: data.firstName.trim(),
+                lastName: data.lastName.trim(),
+                email: data.email.trim(),
+                googleAuth: data.googleAuth,
+              },
+              student: {
+                InId: data.InId,
+                DepId: data.DepId,
+                SemId: data.SemId,
+                StudId: data.StudId,
+                firstName: data.firstName,
+                lastName: data.lastName,
+                email: data.email,
+                gender: data.gender,
+                profile: data.profile,
+                bloodGroup: data.bloodGroup,
+                religion: data.religion,
+                title: data.title,
+                country: data.country,
+                state: data.state,
+                district: data.district,
+                contMob: data.contMob,
+                age: data.age,
+                qualification: data.qualification,
+                dob: data.dob.toDate().toDateString(),
+                pincode: data.pincode,
+                fathName: data.fathName,
+                fathOccu: data.fathOccu,
+                fathMob: data.fathMob,
+                mothName: data.mothName,
+                mothOccu: data.mothOccu,
+                mothMob: data.mothMob,
+                community: data.community,
+                institution: {
+                  name: institution.name,
+                  email: institution.email,
+                  address1: institution.address1,
+                  address2: institution.address2,
+                  address3: institution.address3,
+                  country: institution.country,
+                  state: institution.state,
+                  district: institution.district,
+                  postalCode: institution.postalCode,
+                  phone: institution.phone,
+                },
+                crAt: data.crAt.toDate().toDateString(),
+                modAt: data.modAt.toDate().toDateString(),
+                depName: data.depName,
+                googleAuth: data.googleAuth,
+                type: data.type,
+                semName: data.semName,
+                contactAddress1: data.contactAddress1,
+                contactAddress2: data.contactAddress2,
+                contactAddress3: data.contact_address3,
+                addmisNo: data.addmisNo,
+              },
+            },
+          ];
+          req.session.auth = response;
+          return res.status(200).send({
+            status: 200,
+            data: response[0],
+            message: "login successful!",
+          });
+        })
+        .catch((err) => {
+          return res.status(409).send({
+            status: 409,
+            error: err,
+            message: err.message,
+          });
+        });
+    }
   } catch (err) {
     return res.status(400).send({ status: 400, error: err });
   }
@@ -247,9 +489,10 @@ const GetAttendance = async (req, res) => {
       .where("InId", "==", InId)
       .where("DepId", "==", DepId.trim())
       .where("SemId", "==", SemId.trim())
-      .where("StuID", "==", StudId.trim())
+      .where("StudId", "==", StudId.trim())
       .get()
       .then((res) => res.docs.map((res) => res.data()));
+
     if (!data.length) {
       return res.status(404).send({
         status: 404,
@@ -260,11 +503,14 @@ const GetAttendance = async (req, res) => {
       status: 200,
       data: data.map((obj) => ({
         ...obj,
-        subjects: Object.keys(obj.subjectList).map((key, index) => ({
-          code: obj.subjectList[key].SubCode.toString(),
-          name: obj.subjectList[key].SubName.toString().toUpperCase(),
-          [obj.subjectList[key].SubName.toString().toUpperCase()]: parseInt(
-            obj.subjectList[key].OverAllpercentage
+        overAllPercentage: parseInt(
+          (obj.overAllPrecent / obj.overAllPeriods) * 100
+        ),
+        subjects: obj.subjectList.map((subject) => ({
+          code: subject.subCode.toString(),
+          name: subject.subName.toString().toUpperCase(),
+          [subject.subName.toString().toUpperCase()]: parseInt(
+            (subject.overAllPrecent / subject.overAllPeriods) * 100
           ),
         })),
       })),
@@ -307,11 +553,10 @@ const GetAssignment = async (req, res) => {
           startingDate: data.startingDate.toDate().toDateString(),
           endingDate: data.endingDate.toDate().toDateString(),
           project: data.Project.toString().trim(),
-          status: data.studentsStatus[StudId].status
-            .toString()
-            .toUpperCase()
-            .trim(),
-          description: data.Descriptions.trim(),
+          status: data.studentsStatus
+            .find((student) => student.StudId === StudId)
+            ["status"].toString()
+            .toUpperCase(),
         })),
       });
     }
@@ -411,8 +656,9 @@ const GetExams = async (req, res) => {
           .toLocaleTimeString()
           .toUpperCase(),
         endingTime: obj.ending_time.toDate().toLocaleTimeString().toUpperCase(),
-        status: obj.studentsStatus[StudId].status
-          .toString()
+        status: obj.studentsStatus
+          .find((student) => student.StudId === StudId)
+          ["status"].toString()
           .trim()
           .toUpperCase(),
         description: obj.description.toString().trim(),
@@ -588,69 +834,60 @@ const GetClasses = async (req, res) => {
 const AddAttendance = async (req, res) => {
   const { InId, DepId, SemId, StudId, SubId, ClsId } = req.body;
   try {
+    // return console.log(SubId + " " + ClsId);
     await firebase
       .firestore()
       .collectionGroup("attendance")
       .where("InId", "==", InId.trim())
       .where("DepId", "==", DepId.trim())
       .where("SemId", "==", SemId.trim())
-      .where("StuID", "==", StudId.trim())
+      .where("StudId", "==", StudId.trim())
       .get()
       .then((data) => {
-        data.docs.map((doc) => {
-          firebase
+        data.docs.map(async (doc) => {
+          const data = doc.data();
+          const subjectList = data.subjectList;
+
+          // Assing desired element of object to local javascript variable
+
+          const subjectToupdate =
+            subjectList[
+              subjectList.findIndex((subject) => subject.SubId === SubId.trim())
+            ];
+
+          // Update field of the element assigned to local javascript variable
+
+          subjectToupdate.classes = {
+            ...subjectToupdate.classes,
+            [ClsId]: {
+              ...subjectToupdate.classes[ClsId],
+              status: "precent",
+            },
+          };
+
+          // reassign object to local array variable
+          subjectList[
+            subjectList.findIndex((subject) => subject.SubId === SubId.trim())
+          ] = subjectToupdate;
+
+          await firebase
             .firestore()
             .collection(
-              `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/attendance/${StudId}/subjectList`
+              `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/attendance/`
             )
-            .doc(SubId.trim())
+            .doc(StudId.trim())
             .set(
               {
-                classes: {
-                  [ClsId]: {
-                    status: "precent",
-                  },
-                },
+                overAllPrecent: firebase.firestore.FieldValue.increment(+1),
+                subjectList: subjectList,
               },
               { merge: true }
             )
-            .then(() => {
-              firebase
-                .firestore()
-                .collection(
-                  `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/attendance/`
-                )
-                .doc(StudId.trim())
-                .set(
-                  {
-                    OverAllPrecent: firebase.firestore.FieldValue.increment(+1),
-                  },
-                  { merge: true }
-                );
-            })
-            .then(() => {
-              firebase
-                .firestore()
-                .collection(
-                  `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/attendance/`
-                )
-                .doc(StudId.trim())
-                .set(
-                  {
-                    subjectList: {
-                      [SubId]: {
-                        overAllPrecent:
-                          firebase.firestore.FieldValue.increment(+1),
-                      },
-                    },
-                  },
-                  { merge: true }
-                );
-            })
             .then((response) => res.send({ status: 200, data: response }))
-            .catch((err) => req.send({ status: 500, error: err }));
+            .catch((err) => res.send({ status: 500, error: err }));
         });
-      });
+      })
+      .catch((err) => console.log(err));
   } catch (err) {
     return res.status(400).send({ status: 400, error: err });
   }
@@ -744,7 +981,7 @@ module.exports = {
   loginAccount,
   googleLogin,
   createAccount,
-  verifySession,
+  verify,
   GetAttendance,
   GetAssignment,
   GetBillings,
