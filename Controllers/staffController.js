@@ -693,7 +693,7 @@ const GetStudentsAssignments = async (req, res) => {
               const assignmentCompleted = [];
 
               assignments.find((obj) =>
-                obj.status === "COMPLETED"
+                obj.status.toUpperCase() === "COMPLETED"
                   ? assignmentCompleted.push(obj)
                   : null
               );
@@ -701,13 +701,17 @@ const GetStudentsAssignments = async (req, res) => {
               const assignmentChecking = [];
 
               assignments.find((obj) =>
-                obj.status === "CHECKING" ? assignmentChecking.push(obj) : null
+                obj.status.toUpperCase() === "CHECKING"
+                  ? assignmentChecking.push(obj)
+                  : null
               );
 
               const assignmentPending = [];
 
               assignments.find((obj) =>
-                obj.status === "PENDING" ? assignmentPending.push(obj) : null
+                obj.status.toUpperCase() === "PENDING"
+                  ? assignmentPending.push(obj)
+                  : null
               );
 
               const assignmentCompletedPercentage =
@@ -725,13 +729,22 @@ const GetStudentsAssignments = async (req, res) => {
                   `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/subjects/`
                 )
                 .get()
-                .then((res) => res.docs.map((doc) => doc.data()));
+                .then((res) =>
+                  res.docs.map((doc) => ({ _id: doc.id, ...doc.data() }))
+                );
 
               return {
                 assignmentsData: {
                   assignmentCompletedPercentage,
                   assignmentCheckingPercentage,
                   assignmentPendingPercentage,
+                  subjectList: subjects.map((subject) => ({
+                    SubId: subject._id,
+                    subCode: subject.subCode,
+                    subName: subject.subName,
+                    crAt: subject.crAt,
+                    crBy: subject.crBy,
+                  })),
                   subjects: subjects.map((subject) => {
                     const totalAssignments = [];
                     assignments.map((obj) =>
@@ -857,6 +870,103 @@ const GetStudentsAssignments = async (req, res) => {
     });
   } catch (err) {
     return res.status(400).send({ status: 400, error: err });
+  }
+};
+
+const CreateAssignment = async (req, res) => {
+  const { InId, DepId, SemId, StaffId, Data } = req.body;
+
+  if (Data.length) {
+    try {
+      //get staff details
+      const staffData = await firebase
+        .firestore()
+        .collection("staffs")
+        .where("StaffId", "==", StaffId.trim())
+        .get()
+        .then((res) => res.docs.map((doc) => doc.data())[0]);
+
+      //get subject details
+      const SubId = Data.find((input) => input.id == "subject")
+        ["value"]._id.trim()
+        .toString();
+      const subject = await firebase
+        .firestore()
+        .collectionGroup("subjects")
+        .get()
+        .then((res) => {
+          const data = res.docs.find((doc) => doc.id == SubId).data();
+          const id = res.docs.find((doc) => doc.id == SubId).id;
+          return { _id: id, ...data };
+        });
+
+      //get student id's
+      const StudentIds = await firebase
+        .firestore()
+        .collection("students")
+        .where("InId", "==", InId.trim())
+        .where("DepId", "==", DepId.trim())
+        .where("SemId", "==", SemId.trim())
+        .get()
+        .then((res) =>
+          res.docs.map((doc) => doc.data().StudId).filter((id) => id != "")
+        );
+
+      //add assignment details to assignment collection
+      await firebase
+        .firestore()
+        .collection(
+          `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/assignments/`
+        )
+        .add({
+          InId: InId.trim().toString(),
+          DepId: Data.find((input) => input.id == "department")
+            ["value"]._id.toString()
+            .trim(),
+          SemId: Data.find((input) => input.id == "semester")
+            ["value"]._id.toString()
+            .toString()
+            .trim(),
+          StaffId: staffData.StaffId.trim(),
+          staffName: staffData.firstName + " " + staffData.lastName,
+          project: Data.find((input) => input.id == "project").value.trim(),
+          description: Data.find(
+            (input) => input.id == "description"
+          ).value.trim(),
+          subject: subject.subName.trim(),
+          staff: staffData,
+          subCode: subject.subCode.toString().trim(),
+          subjectData: subject,
+          students: StudentIds,
+          studentsStatus: StudentIds.map((id) => ({
+            StudId: id.trim().toString(),
+            file: null,
+            status: "PENDING",
+          })),
+          startingDate: firebase.firestore.Timestamp.fromMillis(
+            new Date(
+              Data.find((input) => input.id == "startingDate").value.trim() +
+                " " +
+                "12:00:00:AM"
+            )
+          ),
+          endingDate: firebase.firestore.Timestamp.fromMillis(
+            new Date(
+              Data.find((input) => input.id == "endingDate").value.trim() +
+                " " +
+                "12:00:00:AM"
+            )
+          ),
+        });
+
+      res.status(200).send({
+        status: 200,
+        message: "Assignment created successfully!",
+      });
+    } catch (err) {
+      console.log(err);
+      return res.status(400).send({ status: 400, error: err });
+    }
   }
 };
 
@@ -1497,6 +1607,7 @@ module.exports = {
   GetSubjects,
   GetStudents,
   GetStudentsAttendance,
+  CreateAssignment,
   CreateStudent,
   UpdateStudent,
   GetStudentsAssignments,

@@ -24,6 +24,7 @@ const {
   GetStudentProfile,
   GetStudentsAttendance,
   GetStudentsAssignments,
+  CreateAssignment,
 } = require("../Controllers/staffController");
 const firebase = require("../Config/fire-admin");
 const upload = require("express-fileupload");
@@ -61,6 +62,8 @@ router.post("/students", GetStudents);
 router.post("/students/attendance", GetStudentsAttendance);
 
 router.post("/students/assignments", GetStudentsAssignments);
+
+router.post("/students/assignment/create", CreateAssignment);
 
 router.post("/exams", GetExams);
 
