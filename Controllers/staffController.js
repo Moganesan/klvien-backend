@@ -692,26 +692,20 @@ const GetStudentsAssignments = async (req, res) => {
 
               const assignmentCompleted = [];
 
-              assignments.find((obj) =>
-                obj.status.toUpperCase() === "COMPLETED"
-                  ? assignmentCompleted.push(obj)
-                  : null
+              assignments.map((obj) =>
+                obj.status == "COMPLETED" ? assignmentCompleted.push(obj) : null
               );
 
               const assignmentChecking = [];
 
-              assignments.find((obj) =>
-                obj.status.toUpperCase() === "CHECKING"
-                  ? assignmentChecking.push(obj)
-                  : null
+              assignments.map((obj) =>
+                obj.status == "CHECKING" ? assignmentChecking.push(obj) : null
               );
 
               const assignmentPending = [];
 
-              assignments.find((obj) =>
-                obj.status.toUpperCase() === "PENDING"
-                  ? assignmentPending.push(obj)
-                  : null
+              assignments.map((obj) =>
+                obj.status == "PENDING" ? assignmentPending.push(obj) : null
               );
 
               const assignmentCompletedPercentage =
@@ -975,7 +969,7 @@ const GetExams = async (req, res) => {
   try {
     const data = await firebase
       .firestore()
-      .collectionGroup("exams")
+      .collection("students")
       .where("InId", "==", InId.trim())
       .where("DepId", "==", DepId.trim())
       .where("SemId", "==", SemId.trim())
@@ -984,61 +978,158 @@ const GetExams = async (req, res) => {
         async (res) =>
           await Promise.all(
             res.docs.map(async (doc) => {
-              const examdata = doc.data();
+              const studentData = doc.data();
               const id = doc.id;
-              const studentsData = [];
-              await Promise.all(
-                Object.keys(examdata.studentsStatus).map(async (key, index) => {
-                  await firebase
-                    .firestore()
-                    .collection("students")
-                    .where("StudId", "==", key.trim())
-                    .get()
-                    .then((res) =>
-                      res.docs.map((doc) => {
-                        const data = doc.data();
-                        return studentsData.push({
-                          name: data.Name,
-                          lname: data.last_name,
-                          profile: data.profile,
-                          district: data.district,
-                          addmisNo: data.admission_number,
-                          InId: data.inId,
-                          DepId: data.DepId,
-                          depName: data.dep_name,
-                          SemId: data.SemId,
-                          email: data.Email,
-                          sex: data.sex.toUpperCase(),
-                          bloodGroup: data.blood_group,
-                          contAdd1: data.contact_address1,
-                          contAdd2: data.contact_address2,
-                          contAdd3: data.contact_address3,
-                          contMob: data.contact_mobile,
-                          fathName: data.father_name,
-                          fathOccu: data.father_occupation,
-                          fathMob: data.father_mobile,
-                          mothName: data.mother_name,
-                          mothOccu: data.mother_occupation,
-                          mothMob: data.mother_mobile,
-                          age: data.age,
-                          qualification: data.qualification,
+
+              const exams = await firebase
+                .firestore()
+                .collectionGroup("exams")
+                .where("InId", "==", studentData.InId)
+                .where("DepId", "==", studentData.DepId.trim())
+                .where("SemId", "==", studentData.SemId.trim())
+                .where("students", "array-contains-any", [
+                  studentData.StudId.trim(),
+                ])
+                .get()
+                .then(
+                  async (res) =>
+                    await Promise.all(
+                      res.docs.map(async (res) => {
+                        const data = res.data();
+
+                        return {
                           title: data.title,
-                          StudId: data.StudId,
-                          googleAuth: data.googleAuth,
-                          dob: data.dob.toDate().toDateString(),
-                          community: data.community,
-                          city: data.city,
-                          examStatus: {
-                            status: examdata.studentsStatus[data.StudId].status,
-                            file: examdata.studentsStatus[data.StudId].file,
-                          },
-                        });
+                          subject: data.subject,
+                          subCode: data.subCode,
+                          date: data.date.toDate().toDateString(),
+                          staffName: data.staffName,
+                          start: data.startingTime
+                            .toDate()
+                            .toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                            .toUpperCase(),
+                          end: data.endingTime
+                            .toDate()
+                            .toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                            .toUpperCase(),
+                          status: data.studentsStatus
+                            .find(
+                              (status) =>
+                                status.StudId === studentData.StudId.trim()
+                            )
+                            ["status"].toUpperCase(),
+                        };
                       })
-                    );
-                })
+                    )
+                );
+
+              const examCompleted = [];
+
+              exams.map((obj) =>
+                obj.status == "COMPLETED" ? examCompleted.push(obj) : null
               );
 
-              return { id, studentsDetails: studentsData, ...examdata };
+              const examChecking = [];
+
+              exams.map((obj) =>
+                obj.status == "CHECKING" ? examChecking.push(obj) : null
+              );
+
+              const examPending = [];
+
+              exams.map((obj) =>
+                obj.status == "PENDING" ? examPending.push(obj) : null
+              );
+
+              const examCompletedPercentage =
+                (examCompleted.length / exams.length) * 100;
+
+              const examCheckingPercentage =
+                (examChecking.length / exams.length) * 100;
+
+              const examPendingPercentage =
+                (examPending.length / exams.length) * 100;
+
+              const subjects = await firebase
+                .firestore()
+                .collection(
+                  `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/subjects/`
+                )
+                .get()
+                .then((res) =>
+                  res.docs.map((doc) => ({ _id: doc.id, ...doc.data() }))
+                );
+
+              return {
+                examsData: {
+                  examCompletedPercentage,
+                  examCheckingPercentage,
+                  examPendingPercentage,
+                  subjectList: subjects.map((subject) => ({
+                    SubId: subject._id,
+                    subCode: subject.subCode,
+                    subName: subject.subName,
+                    crAt: subject.crAt,
+                    crBy: subject.crBy,
+                  })),
+                  subjects: subjects.map((subject) => {
+                    const totalExams = [];
+                    exams.map((obj) =>
+                      obj.subCode == subject.subCode
+                        ? totalExams.push(obj)
+                        : null
+                    );
+                    const examCompleted = [];
+                    exams.map((obj) =>
+                      obj.subCode == subject.subCode
+                        ? obj.status === "COMPLETED"
+                          ? examCompleted.push(obj)
+                          : null
+                        : null
+                    );
+                    const examChecking = [];
+                    exams.map((obj) =>
+                      obj.subCode == subject.subCode
+                        ? obj.status === "CHECKING"
+                          ? examChecking.push(obj)
+                          : null
+                        : null
+                    );
+                    const examPending = [];
+                    exams.map((obj) =>
+                      obj.subCode == subject.subCode
+                        ? obj.status === "PENDING"
+                          ? examPending.push(obj)
+                          : null
+                        : null
+                    );
+
+                    const examCompletedPercentage =
+                      (examCompleted.length / totalExams.length) * 100;
+
+                    const examCheckingPercentage =
+                      (examChecking.length / totalExams.length) * 100;
+
+                    const examPendingPercentage =
+                      (examPending.length / totalExams.length) * 100;
+
+                    return {
+                      subject: subject.subName.toUpperCase(),
+                      Completed: examCompleted.length,
+                      Checking: examChecking.length,
+                      Pending: examPending.length,
+                    };
+                  }),
+                  exams,
+                },
+                id,
+                ...studentData,
+              };
             })
           )
       );
@@ -1052,23 +1143,194 @@ const GetExams = async (req, res) => {
     return res.status(200).send({
       status: 200,
       data: data.map((obj) => ({
-        _id: obj.id,
-        subject: obj.subject.toString().trim(),
-        subjectCode: obj.subject_code.toString().trim(),
-        examCode: obj.exam_code.toString().trim(),
-        date: obj.date.toDate().toDateString(),
-        startingTime: obj.starting_time
-          .toDate()
-          .toLocaleTimeString()
-          .toUpperCase(),
-        endingTime: obj.ending_time.toDate().toLocaleTimeString().toUpperCase(),
-        description: obj.description.toString().trim(),
-        students: obj.studentsDetails,
+        InId: obj.InId.trim(),
+        DepId: obj.DepId.trim(),
+        SemId: obj.SemId.trim(),
+        StudId: obj.StudId.trim(),
+        firstName: obj.firstName.trim(),
+        lastName: obj.lastName.trim(),
+        email: obj.email.trim(),
+        examsData: obj.examsData,
+        gender: obj.gender.trim(),
+        profile: obj.profile.trim(),
+        bloodGroup: obj.bloodGroup.trim(),
+        religion: obj.religion.trim(),
+        title: obj.title.trim(),
+        country: obj.country.trim(),
+        state: obj.state.trim(),
+        district: obj.district.trim(),
+        contMob: obj.contMob.trim(),
+        age: obj.age.trim(),
+        qualification: obj.qualification.trim(),
+        dob: obj.dob.toDate().toLocaleDateString("sv"),
+        pincode: obj.pincode.trim(),
+        fathName: obj.fathName.trim(),
+        fathOccu: obj.fathOccu.trim(),
+        fathMob: obj.fathMob.trim(),
+        mothName: obj.mothName.trim(),
+        mothOccu: obj.mothOccu.trim(),
+        mothMob: obj.mothMob.trim(),
+        community: obj.community.trim(),
+        institution: {
+          name: obj.institution.name,
+          email: obj.institution.email,
+          address1: obj.institution.address1,
+          address2: obj.institution.address2,
+          address3: obj.institution.address3,
+          country: obj.institution.country,
+          state: obj.institution.state,
+          district: obj.institution.district,
+          postalCode: obj.institution.postalCode,
+          phone: obj.institution.phone,
+        },
+        crAt: obj.crAt.toDate().toDateString(),
+        modAt: obj.modAt.toDate().toDateString(),
+        depName: obj.depName.trim(),
+        googleAuth: obj.googleAuth,
+        type: obj.type.trim(),
+        semName: obj.semName.trim(),
+        contactAddress1: obj.contactAddress1.trim(),
+        contactAddress2: obj.contactAddress2.trim(),
+        contactAddress3: obj.contactAddress3.trim(),
+        addmisNo: obj.addmisNo.trim(),
       })),
       items: Object.keys(data).length,
     });
   } catch (err) {
+    console.log(err);
     return res.status(400).send({ status: 400, error: err });
+  }
+};
+
+const CreateExam = async (req, res) => {
+  const { InId, DepId, SemId, StaffId, Data } = req.body;
+
+  if (Data.length) {
+    try {
+      //get staff details
+      const staffData = await firebase
+        .firestore()
+        .collection("staffs")
+        .where("StaffId", "==", StaffId.trim())
+        .get()
+        .then((res) => res.docs.map((doc) => doc.data())[0]);
+
+      //get subject details
+      const SubId = Data.find((input) => input.id == "subject")
+        ["value"]._id.trim()
+        .toString();
+      const subject = await firebase
+        .firestore()
+        .collectionGroup("subjects")
+        .get()
+        .then((res) => {
+          const data = res.docs.find((doc) => doc.id == SubId).data();
+          const id = res.docs.find((doc) => doc.id == SubId).id;
+          return { _id: id, ...data };
+        });
+
+      //get student id's
+      const StudentIds = await firebase
+        .firestore()
+        .collection("students")
+        .where("InId", "==", InId.trim())
+        .where("DepId", "==", DepId.trim())
+        .where("SemId", "==", SemId.trim())
+        .get()
+        .then((res) =>
+          res.docs.map((doc) => doc.data().StudId).filter((id) => id != "")
+        );
+
+      //add exam details to exam collection
+      await firebase
+        .firestore()
+        .collection(
+          `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/exams/`
+        )
+        .add({
+          InId: InId.trim().toString(),
+          DepId: Data.find((input) => input.id == "department")
+            ["value"]._id.toString()
+            .trim(),
+          SemId: Data.find((input) => input.id == "semester")
+            ["value"]._id.toString()
+            .toString()
+            .trim(),
+          StaffId: staffData.StaffId.trim(),
+          staffName: staffData.firstName + " " + staffData.lastName,
+          title: Data.find((input) => input.id == "title").value.trim(),
+          description: Data.find(
+            (input) => input.id == "description"
+          ).value.trim(),
+          examCode: Data.find((input) => input.id == "examCode").value.trim(),
+          subject: subject.subName.trim(),
+          staff: staffData,
+          subCode: subject.subCode.toString().trim(),
+          subjectData: subject,
+          students: StudentIds,
+          studentsStatus: StudentIds.map((id) => ({
+            StudId: id.trim().toString(),
+            file: null,
+            status: "PENDING",
+          })),
+          date: firebase.firestore.Timestamp.fromMillis(
+            new Date(
+              Data.find((input) => input.id == "date").value.trim() +
+                " " +
+                "12:00:00:AM"
+            )
+          ),
+          startingTime: firebase.firestore.Timestamp.fromMillis(
+            new Date(
+              Data.find((input) => input.id == "date").value.trim() +
+                " " +
+                new Date(
+                  "1970-01-01T" +
+                    Data.find(
+                      (input) => input.id == "startingTime"
+                    ).value.trim() +
+                    "Z"
+                ).toLocaleTimeString(
+                  {},
+                  {
+                    timeZone: "UTC",
+                    hour12: true,
+                    hour: "numeric",
+                    minute: "numeric",
+                  }
+                )
+            )
+          ),
+          endingTime: firebase.firestore.Timestamp.fromMillis(
+            new Date(
+              Data.find((input) => input.id == "date").value.trim() +
+                " " +
+                new Date(
+                  "1970-01-01T" +
+                    Data.find(
+                      (input) => input.id == "endingTime"
+                    ).value.trim() +
+                    "Z"
+                ).toLocaleTimeString(
+                  {},
+                  {
+                    timeZone: "UTC",
+                    hour12: true,
+                    hour: "numeric",
+                    minute: "numeric",
+                  }
+                )
+            )
+          ),
+        });
+
+      res.status(200).send({
+        status: 200,
+        message: "Exam created successfully!",
+      });
+    } catch (err) {
+      return res.status(400).send({ status: 400, error: err });
+    }
   }
 };
 
@@ -1612,6 +1874,7 @@ module.exports = {
   UpdateStudent,
   GetStudentsAssignments,
   GetExams,
+  CreateExam,
   GetClasses,
   UploadProfile,
   GetStudentProfile,
