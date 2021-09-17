@@ -377,6 +377,7 @@ const createAccount = async (req, res) => {
               overAllPrecent: 0,
               overAllPercentage: 0,
               createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+              attendanceLog: [],
               subjectList: subjects.map((subject) => {
                 return {
                   SubId: subject._id,
@@ -516,6 +517,7 @@ const GetAttendance = async (req, res) => {
       })),
     });
   } catch (err) {
+    console.log(err);
     return res.status(400).send({ status: 400, error: err });
   }
 };
@@ -834,7 +836,6 @@ const GetClasses = async (req, res) => {
 const AddAttendance = async (req, res) => {
   const { InId, DepId, SemId, StudId, SubId, ClsId } = req.body;
   try {
-    // return console.log(SubId + " " + ClsId);
     await firebase
       .firestore()
       .collectionGroup("attendance")

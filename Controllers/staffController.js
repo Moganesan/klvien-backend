@@ -541,14 +541,14 @@ const GetStudentsAttendance = async (req, res) => {
                             return {
                               subName: log.subName.toUpperCase().trim(),
                               date: log.date.toDate().toDateString(),
-                              start: log.start
+                              start: log.startingTime
                                 .toDate()
                                 .toLocaleTimeString([], {
                                   hour: "2-digit",
                                   minute: "2-digit",
                                 })
                                 .toUpperCase(),
-                              end: log.end
+                              end: log.endingTime
                                 .toDate()
                                 .toLocaleTimeString([], {
                                   hour: "2-digit",
@@ -556,8 +556,8 @@ const GetStudentsAttendance = async (req, res) => {
                                 })
                                 .toUpperCase(),
                               duration: timeDeff(
-                                log.start.toDate(),
-                                log.end.toDate()
+                                log.startingTime.toDate(),
+                                log.endingTime.toDate()
                               ),
                               staffName: log.staffName,
                               status: log.status.toUpperCase().trim(),
@@ -636,6 +636,7 @@ const GetStudentsAttendance = async (req, res) => {
       items: Object.keys(data).length,
     });
   } catch (err) {
+    console.log(err);
     return res.status(400).send({ status: 400, error: err });
   }
 };
@@ -676,8 +677,8 @@ const GetStudentsAssignments = async (req, res) => {
                           subject: data.subject,
                           subCode: data.subCode,
                           project: data.project,
-                          start: data.startingDate.toDate().toDateString(),
-                          end: data.endingDate.toDate().toDateString(),
+                          date: data.date.toDate().toDateString(),
+                          dueDate: data.dueDate.toDate().toDateString(),
                           staffName: data.staffName,
                           status: data.studentsStatus
                             .find(
@@ -817,6 +818,7 @@ const GetStudentsAssignments = async (req, res) => {
         lastName: obj.lastName.trim(),
         email: obj.email.trim(),
         assignmentsData: obj.assignmentsData,
+        assignmentsCount: obj.assignmentsData.assignments.length,
         gender: obj.gender.trim(),
         profile: obj.profile.trim(),
         bloodGroup: obj.bloodGroup.trim(),
@@ -863,6 +865,7 @@ const GetStudentsAssignments = async (req, res) => {
       items: Object.keys(data).length,
     });
   } catch (err) {
+    console.log(err);
     return res.status(400).send({ status: 400, error: err });
   }
 };
@@ -937,16 +940,16 @@ const CreateAssignment = async (req, res) => {
             file: null,
             status: "PENDING",
           })),
-          startingDate: firebase.firestore.Timestamp.fromMillis(
+          date: firebase.firestore.Timestamp.fromMillis(
             new Date(
-              Data.find((input) => input.id == "startingDate").value.trim() +
+              Data.find((input) => input.id == "date").value.trim() +
                 " " +
                 "12:00:00:AM"
             )
           ),
-          endingDate: firebase.firestore.Timestamp.fromMillis(
+          dueDate: firebase.firestore.Timestamp.fromMillis(
             new Date(
-              Data.find((input) => input.id == "endingDate").value.trim() +
+              Data.find((input) => input.id == "dueDate").value.trim() +
                 " " +
                 "12:00:00:AM"
             )
@@ -1202,6 +1205,86 @@ const GetExams = async (req, res) => {
   }
 };
 
+const GetHolidays = async (req, res) => {
+  const { InId, DepId, SemId } = req.body;
+  try {
+    const data = await firebase
+      .firestore()
+      .collectionGroup("holidays")
+      .where("InId", "==", InId.toString().trim())
+      .where("DepId", "==", DepId.toString().trim())
+      .where("SemId", "==", SemId.toString().trim())
+      .get()
+      .then((res) =>
+        res.docs.map((doc) => {
+          const data = doc.data();
+          const id = doc.id;
+          return { id, ...data };
+        })
+      );
+
+    if (!data.length) {
+      return res.status(404).send({
+        status: 404,
+        err: "not found!",
+      });
+    }
+    return res.status(200).send({
+      status: 200,
+      data: data.map((obj) => ({
+        _id: obj.id,
+        event: obj.event.toString().trim(),
+        startingDate: obj.startingDate.toDate().toDateString().toUpperCase(),
+        endingDate: obj.endingDate.toDate().toDateString().toUpperCase(),
+        message: obj.message.toString().trim(),
+      })),
+      items: Object.keys(data).length,
+    });
+  } catch (err) {
+    return res.status(400).send({ status: 400, error: err });
+  }
+};
+
+const CreateHolidays = async (req, res) => {
+  const { InId, DepId, SemId, StaffId, Data } = req.body;
+  try {
+    await firebase
+      .firestore()
+      .collection(
+        `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/holidays/`
+      )
+      .add({
+        InId: InId.trim(),
+        DepId: DepId.trim(),
+        SemId: SemId.trim(),
+        StaffId: StaffId.trim(),
+        event: Data.find((input) => input.id == "event").value.trim(),
+        message: Data.find((input) => input.id == "message").value.trim(),
+        startingDate: firebase.firestore.Timestamp.fromMillis(
+          new Date(
+            Data.find((input) => input.id == "startingDate").value.trim() +
+              " " +
+              "12:00:00:AM"
+          )
+        ),
+        endingDate: firebase.firestore.Timestamp.fromMillis(
+          new Date(
+            Data.find((input) => input.id == "endingDate").value.trim() +
+              " " +
+              "12:00:00:AM"
+          )
+        ),
+      });
+    res.status(200).send({
+      status: 200,
+      message: "Holiday created successfully!",
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(400).send({ status: 400, error: err });
+  }
+};
+
 const CreateExam = async (req, res) => {
   const { InId, DepId, SemId, StaffId, Data } = req.body;
 
@@ -1352,54 +1435,90 @@ const GetClasses = async (req, res) => {
               const id = doc.id;
               const studentsData = [];
 
-              // await Promise.all(
-              //   classdata.students.map(async (studId) => {
-              //     await firebase
-              //       .firestore()
-              //       .collection("students")
-              //       .where("StudId", "==", studId.trim())
-              //       .get()
-              //       .then((res) =>
-              //         res.docs.map((doc) => {
-              //           const data = doc.data();
-              //           return studentsData.push({
-              //             name: data.Name,
-              //             lname: data.last_name,
-              //             profile: data.profile,
-              //             district: data.district,
-              //             addmisNo: data.admission_number,
-              //             InId: data.inId,
-              //             DepId: data.DepId,
-              //             depName: data.dep_name,
-              //             SemId: data.SemId,
-              //             email: data.Email,
-              //             sex: data.sex.toUpperCase(),
-              //             bloodGroup: data.blood_group,
-              //             contAdd1: data.contact_address1,
-              //             contAdd2: data.contact_address2,
-              //             contAdd3: data.contact_address3,
-              //             contMob: data.contact_mobile,
-              //             fathName: data.father_name,
-              //             fathOccu: data.father_occupation,
-              //             fathMob: data.father_mobile,
-              //             mothName: data.mother_name,
-              //             mothOccu: data.mother_occupation,
-              //             mothMob: data.mother_mobile,
-              //             age: data.age,
-              //             qualification: data.qualification,
-              //             title: data.title,
-              //             StudId: data.StudId,
-              //             googleAuth: data.googleAuth,
-              //             dob: data.dob.toDate().toDateString(),
-              //             community: data.community,
-              //             city: data.city,
-              //           });
-              //         })
-              //       );
-              //   })
-              // );
+              await Promise.all(
+                classdata.students.map(async (studId) => {
+                  await firebase
+                    .firestore()
+                    .collection("students")
+                    .where("StudId", "==", studId.trim())
+                    .get()
+                    .then(
+                      async (res) =>
+                        await Promise.all(
+                          res.docs.map(async (doc) => {
+                            const data = doc.data();
 
-              return { id, ...classdata };
+                            const attendanceLog = await firebase
+                              .firestore()
+                              .collectionGroup("attendance")
+                              .where("StudId", "==", data.StudId)
+                              .get()
+                              .then(
+                                (res) =>
+                                  res.docs.map((doc) => doc.data())[0]
+                                    .attendanceLog
+                              );
+
+                            return studentsData.push({
+                              InId: data.InId.trim(),
+                              DepId: data.DepId.trim(),
+                              SemId: data.SemId.trim(),
+                              StudId: data.StudId.trim(),
+                              firstName: data.firstName.trim(),
+                              lastName: data.lastName.trim(),
+                              email: data.email.trim(),
+                              assignmentsData: data.assignmentsData,
+                              gender: data.gender.trim(),
+                              profile: data.profile.trim(),
+                              bloodGroup: data.bloodGroup.trim(),
+                              religion: data.religion.trim(),
+                              title: data.title.trim(),
+                              country: data.country.trim(),
+                              attendanceLog: attendanceLog,
+                              state: data.state.trim(),
+                              district: data.district.trim(),
+                              contMob: data.contMob.trim(),
+                              age: data.age.trim(),
+                              qualification: data.qualification.trim(),
+                              dob: data.dob.toDate().toLocaleDateString("sv"),
+                              pincode: data.pincode.trim(),
+                              fathName: data.fathName.trim(),
+                              fathOccu: data.fathOccu.trim(),
+                              fathMob: data.fathMob.trim(),
+                              mothName: data.mothName.trim(),
+                              mothOccu: data.mothOccu.trim(),
+                              mothMob: data.mothMob.trim(),
+                              community: data.community.trim(),
+                              institution: {
+                                name: data.institution.name,
+                                email: data.institution.email,
+                                address1: data.institution.address1,
+                                address2: data.institution.address2,
+                                address3: data.institution.address3,
+                                country: data.institution.country,
+                                state: data.institution.state,
+                                district: data.institution.district,
+                                postalCode: data.institution.postalCode,
+                                phone: data.institution.phone,
+                              },
+                              crAt: data.crAt.toDate().toDateString(),
+                              modAt: data.modAt.toDate().toDateString(),
+                              depName: data.depName.trim(),
+                              googleAuth: data.googleAuth,
+                              type: data.type.trim(),
+                              semName: data.semName.trim(),
+                              contactAddress1: data.contactAddress1.trim(),
+                              contactAddress2: data.contactAddress2.trim(),
+                              contactAddress3: data.contactAddress3.trim(),
+                              addmisNo: data.addmisNo.trim(),
+                            });
+                          })
+                        )
+                    );
+                })
+              );
+
+              return { id, studentsData, ...classdata };
             })
           )
       );
@@ -1418,26 +1537,606 @@ const GetClasses = async (req, res) => {
         DepId: obj.DepId,
         SemId: obj.SemId,
         StaffId: obj.StaffId,
-        date: obj.date.toDate().toDateString().toUpperCase(),
-        startingTime: obj.start
+        ClsId: obj.id,
+        SubId: obj.SubId.toString().trim(),
+        date: obj.date.toDate().toDateString(),
+        datetoLocaleDateString: obj.date.toDate().toLocaleDateString("sv"),
+        startingTime: obj.startingTime
           .toDate()
           .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
           .toUpperCase(),
-        endingTime: obj.end
+        startingTime24: obj.startingTime
+          .toDate()
+          .toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          })
+          .toUpperCase(),
+        endingTime: obj.endingTime
           .toDate()
           .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
           .toUpperCase(),
+
+        endingTime24: obj.endingTime.toDate().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        }),
         meeting: obj.meeting.join_url ? obj.meeting : false,
-        subject: obj.SubName.toString().trim(),
-        subId: obj.SubId.toString().trim(),
-        chapter: obj.ChapterName.toString().trim(),
-        staffName: obj.StaffName.toString().trim(),
-        student: obj.studentsDetails,
+        status: obj.meeting.join_url ? "STARTED" : "NOT YET STARTED",
+        subject: obj.subject.toString().trim(),
+        chapter: obj.chapter.toString().trim(),
+        staffName: obj.staffName.toString().trim(),
+        studentsData: obj.studentsData,
       })),
       items: Object.keys(data).length,
     });
   } catch (err) {
+    console.log(err);
     return res.status(400).send({ status: 400, error: err });
+  }
+};
+
+const CreateClass = async (req, res) => {
+  const { InId, DepId, SemId, StaffId, Data } = req.body;
+
+  if (Data.length) {
+    try {
+      //get staff details
+      const staffData = await firebase
+        .firestore()
+        .collection("staffs")
+        .where("StaffId", "==", StaffId.trim())
+        .get()
+        .then((res) => res.docs.map((doc) => doc.data())[0]);
+
+      //get subject details
+      const SubId = Data.find((input) => input.id == "subject")
+        ["value"]._id.trim()
+        .toString();
+      const subject = await firebase
+        .firestore()
+        .collectionGroup("subjects")
+        .get()
+        .then((res) => {
+          const data = res.docs.find((doc) => doc.id == SubId).data();
+          const id = res.docs.find((doc) => doc.id == SubId).id;
+          return { _id: id, ...data };
+        });
+
+      //get student id's
+      const StudentIds = await firebase
+        .firestore()
+        .collection("students")
+        .where("InId", "==", InId.trim())
+        .where("DepId", "==", DepId.trim())
+        .where("SemId", "==", SemId.trim())
+        .get()
+        .then((res) =>
+          res.docs.map((doc) => doc.data().StudId).filter((id) => id != "")
+        );
+
+      //add class details to class collection
+      await firebase
+        .firestore()
+        .collection(
+          `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/classes/`
+        )
+        .add({
+          InId: InId.trim().toString(),
+          DepId: Data.find((input) => input.id == "department")
+            ["value"]._id.toString()
+            .trim(),
+          SemId: Data.find((input) => input.id == "semester")
+            ["value"]._id.toString()
+            .toString()
+            .trim(),
+          SubId: subject._id.trim(),
+          StaffId: staffData.StaffId.trim(),
+          staffName: staffData.firstName + " " + staffData.lastName,
+          subject: subject.subName.trim(),
+          chapter: Data.find((input) => input.id == "chapter").value.trim(),
+          meeting: {
+            id: "",
+            join_url:
+              Data.find((input) => input.id == "meetingUrl").value.trim() == ""
+                ? null
+                : Data.find((input) => input.id == "meetingUrl").value.trim(),
+            vendor: "",
+          },
+          staffData: staffData,
+          subCode: subject.subCode.toString().trim(),
+          subjectData: subject,
+          students: StudentIds,
+          date: firebase.firestore.Timestamp.fromMillis(
+            new Date(
+              Data.find((input) => input.id == "date").value.trim() +
+                " " +
+                "12:00:00:AM"
+            )
+          ),
+          startingTime: firebase.firestore.Timestamp.fromMillis(
+            new Date(
+              Data.find((input) => input.id == "date").value.trim() +
+                " " +
+                new Date(
+                  "1970-01-01T" +
+                    Data.find(
+                      (input) => input.id == "startingTime"
+                    ).value.trim() +
+                    "Z"
+                ).toLocaleTimeString(
+                  {},
+                  {
+                    timeZone: "UTC",
+                    hour12: true,
+                    hour: "numeric",
+                    minute: "numeric",
+                  }
+                )
+            )
+          ),
+          endingTime: firebase.firestore.Timestamp.fromMillis(
+            new Date(
+              Data.find((input) => input.id == "date").value.trim() +
+                " " +
+                new Date(
+                  "1970-01-01T" +
+                    Data.find(
+                      (input) => input.id == "endingTime"
+                    ).value.trim() +
+                    "Z"
+                ).toLocaleTimeString(
+                  {},
+                  {
+                    timeZone: "UTC",
+                    hour12: true,
+                    hour: "numeric",
+                    minute: "numeric",
+                  }
+                )
+            )
+          ),
+        })
+        .then(async (res) => {
+          ClsId = res.id;
+          //add class details to students attendance collections
+
+          await Promise.all(
+            StudentIds.map(async (StudId) => {
+              await firebase
+                .firestore()
+                .collectionGroup("attendance")
+                .where("InId", "==", InId.trim())
+                .where("DepId", "==", DepId.trim())
+                .where("SemId", "==", SemId.trim())
+                .where("StudId", "==", StudId.trim())
+                .get()
+                .then((data) => {
+                  data.docs.map(async (doc) => {
+                    const data = doc.data();
+                    const subjectList = data.subjectList;
+                    const attendanceLog = data.attendanceLog;
+
+                    attendanceLog.push({
+                      ClsId: ClsId.trim(),
+                      StaffId: staffData.StaffId.trim(),
+                      SubId: subject._id.trim(),
+                      date: firebase.firestore.Timestamp.fromMillis(
+                        new Date(
+                          Data.find(
+                            (input) => input.id == "date"
+                          ).value.trim() +
+                            " " +
+                            "12:00:00:AM"
+                        )
+                      ),
+                      staffName:
+                        staffData.firstName.trim() +
+                        " " +
+                        staffData.lastName.trim(),
+                      subName: subject.subName.trim(),
+                      staffData: staffData,
+                      subjectData: subject,
+                      status: "ABSENT",
+                      startingTime: firebase.firestore.Timestamp.fromMillis(
+                        new Date(
+                          Data.find(
+                            (input) => input.id == "date"
+                          ).value.trim() +
+                            " " +
+                            new Date(
+                              "1970-01-01T" +
+                                Data.find(
+                                  (input) => input.id == "startingTime"
+                                ).value.trim() +
+                                "Z"
+                            ).toLocaleTimeString(
+                              {},
+                              {
+                                timeZone: "UTC",
+                                hour12: true,
+                                hour: "numeric",
+                                minute: "numeric",
+                              }
+                            )
+                        )
+                      ),
+                      endingTime: firebase.firestore.Timestamp.fromMillis(
+                        new Date(
+                          Data.find(
+                            (input) => input.id == "date"
+                          ).value.trim() +
+                            " " +
+                            new Date(
+                              "1970-01-01T" +
+                                Data.find(
+                                  (input) => input.id == "endingTime"
+                                ).value.trim() +
+                                "Z"
+                            ).toLocaleTimeString(
+                              {},
+                              {
+                                timeZone: "UTC",
+                                hour12: true,
+                                hour: "numeric",
+                                minute: "numeric",
+                              }
+                            )
+                        )
+                      ),
+                    });
+
+                    // Assing desired element of object to local javascript variable
+
+                    const subjectToupdate =
+                      subjectList[
+                        subjectList.findIndex(
+                          (subject) => subject.SubId === SubId.trim()
+                        )
+                      ];
+
+                    // Update field of the element assigned to local javascript variable
+
+                    subjectToupdate.classes = {
+                      ...subjectToupdate.classes,
+                      [ClsId]: {
+                        ...subjectToupdate.classes[ClsId],
+                        ClsId: ClsId,
+                        status: "ABSENT",
+                      },
+                    };
+
+                    subjectToupdate.overAllPeriods =
+                      subjectToupdate.overAllPeriods + 1;
+
+                    // reassign object to local array variable
+                    subjectList[
+                      subjectList.findIndex(
+                        (subject) => subject.SubId === SubId.trim()
+                      )
+                    ] = subjectToupdate;
+
+                    await firebase
+                      .firestore()
+                      .collection(
+                        `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/attendance/`
+                      )
+                      .doc(StudId.trim())
+                      .set(
+                        {
+                          overAllPeriods:
+                            firebase.firestore.FieldValue.increment(+1),
+                          subjectList: subjectList,
+                          attendanceLog: attendanceLog,
+                        },
+                        { merge: true }
+                      );
+                  });
+                });
+            })
+          );
+        });
+
+      res.status(200).send({
+        status: 200,
+        message: "Class created successfully!",
+      });
+    } catch (err) {
+      console.log(err);
+      return res.status(400).send({ status: 400, error: err });
+    }
+  }
+};
+
+const AddStudentAttendance = async (req, res) => {
+  const { InId, DepId, SemId, StudId, SubId, ClsId, Status } = req.body;
+  try {
+    await firebase
+      .firestore()
+      .collectionGroup("attendance")
+      .where("InId", "==", InId.trim())
+      .where("DepId", "==", DepId.trim())
+      .where("SemId", "==", SemId.trim())
+      .where("StudId", "==", StudId.trim())
+      .get()
+      .then((data) => {
+        data.docs.map(async (doc) => {
+          const data = doc.data();
+          const subjectList = data.subjectList;
+          const attendanceLog = data.attendanceLog;
+
+          let attendanceLogToUpdate =
+            attendanceLog[
+              attendanceLog.findIndex((log) => log.ClsId == ClsId.trim())
+            ];
+
+          attendanceLogToUpdate.status = Status.toUpperCase();
+
+          attendanceLog[
+            attendanceLog.findIndex((log) => log.ClsId == ClsId.trim())
+          ] = attendanceLogToUpdate;
+
+          const subjectToupdate =
+            subjectList[
+              subjectList.findIndex((subject) => subject.SubId === SubId.trim())
+            ];
+
+          subjectToupdate.overAllPrecent =
+            Status.toUpperCase().trim() == "PRECENT"
+              ? subjectToupdate.overAllPrecent + 1
+              : Status.toUpperCase().trim() == "ABSENT"
+              ? subjectToupdate.overAllPrecent - 1
+              : subjectToupdate.overAllPrecent;
+
+          subjectToupdate.classes = {
+            ...subjectToupdate.classes,
+            [ClsId]: {
+              ...subjectToupdate.classes[ClsId],
+              status: Status.toUpperCase(),
+            },
+          };
+
+          subjectList[
+            subjectList.findIndex((subject) => subject.SubId === SubId.trim())
+          ] = subjectToupdate;
+
+          await firebase
+            .firestore()
+            .collection(
+              `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/attendance/`
+            )
+            .doc(StudId.trim())
+            .set(
+              {
+                overAllPrecent:
+                  Status.toUpperCase().trim() == "PRECENT"
+                    ? firebase.firestore.FieldValue.increment(+1)
+                    : Status.toUpperCase().trim() == "ABSENT"
+                    ? firebase.firestore.FieldValue.increment(-1)
+                    : firebase.firestore.FieldValue,
+                subjectList: subjectList,
+                attendanceLog: attendanceLog,
+              },
+              { merge: true }
+            )
+            .then((response) => res.send({ status: 200, data: response }))
+            .catch((err) => res.send({ status: 500, error: err }));
+        });
+      })
+      .catch((err) => console.log(err));
+  } catch (err) {
+    return res.status(400).send({ status: 400, error: err });
+  }
+};
+
+const UpdateClass = async (req, res) => {
+  const { InId, DepId, SemId, ClsId, Data } = req.body;
+
+  if (Data.length) {
+    try {
+      //get student id's
+      const StudentIds = await firebase
+        .firestore()
+        .collection("students")
+        .where("InId", "==", InId.trim())
+        .where("DepId", "==", DepId.trim())
+        .where("SemId", "==", SemId.trim())
+        .get()
+        .then((res) =>
+          res.docs.map((doc) => doc.data().StudId).filter((id) => id != "")
+        );
+
+      //update class details to class collection
+      await firebase
+        .firestore()
+        .collection(
+          `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/classes/`
+        )
+        .doc(ClsId.trim())
+        .set(
+          {
+            chapter: Data.find((input) => input.id == "chapter").value.trim(),
+            meeting: {
+              id: "",
+              join_url:
+                Data.find((input) => input.id == "meetingUrl").value.trim() ==
+                ""
+                  ? null
+                  : Data.find((input) => input.id == "meetingUrl").value.trim(),
+              vendor: "",
+            },
+            students: StudentIds,
+            date: firebase.firestore.Timestamp.fromMillis(
+              new Date(
+                Data.find((input) => input.id == "date").value.trim() +
+                  " " +
+                  "12:00:00:AM"
+              )
+            ),
+            startingTime: firebase.firestore.Timestamp.fromMillis(
+              new Date(
+                Data.find((input) => input.id == "date").value.trim() +
+                  " " +
+                  new Date(
+                    "1970-01-01T" +
+                      Data.find(
+                        (input) => input.id == "startingTime"
+                      ).value.trim() +
+                      "Z"
+                  ).toLocaleTimeString(
+                    {},
+                    {
+                      timeZone: "UTC",
+                      hour12: true,
+                      hour: "numeric",
+                      minute: "numeric",
+                    }
+                  )
+              )
+            ),
+            endingTime: firebase.firestore.Timestamp.fromMillis(
+              new Date(
+                Data.find((input) => input.id == "date").value.trim() +
+                  " " +
+                  new Date(
+                    "1970-01-01T" +
+                      Data.find(
+                        (input) => input.id == "endingTime"
+                      ).value.trim() +
+                      "Z"
+                  ).toLocaleTimeString(
+                    {},
+                    {
+                      timeZone: "UTC",
+                      hour12: true,
+                      hour: "numeric",
+                      minute: "numeric",
+                    }
+                  )
+              )
+            ),
+          },
+          { merge: true }
+        )
+        .then(async (res) => {
+          //update class details to students attendance collections
+
+          await Promise.all(
+            StudentIds.map(async (StudId) => {
+              await firebase
+                .firestore()
+                .collectionGroup("attendance")
+                .where("InId", "==", InId.trim())
+                .where("DepId", "==", DepId.trim())
+                .where("SemId", "==", SemId.trim())
+                .where("StudId", "==", StudId.trim())
+                .get()
+                .then((data) => {
+                  data.docs.map(async (doc) => {
+                    const data = doc.data();
+                    const subjectList = data.subjectList;
+                    const attendanceLog = data.attendanceLog;
+
+                    let attendanceLogToUpdate =
+                      attendanceLog[
+                        attendanceLog.findIndex(
+                          (log) => log.ClsId == ClsId.trim()
+                        )
+                      ];
+
+                    attendanceLogToUpdate = {
+                      ...attendanceLogToUpdate,
+                      date: firebase.firestore.Timestamp.fromMillis(
+                        new Date(
+                          Data.find(
+                            (input) => input.id == "date"
+                          ).value.trim() +
+                            " " +
+                            "12:00:00:AM"
+                        )
+                      ),
+                      startingTime: firebase.firestore.Timestamp.fromMillis(
+                        new Date(
+                          Data.find(
+                            (input) => input.id == "date"
+                          ).value.trim() +
+                            " " +
+                            new Date(
+                              "1970-01-01T" +
+                                Data.find(
+                                  (input) => input.id == "startingTime"
+                                ).value.trim() +
+                                "Z"
+                            ).toLocaleTimeString(
+                              {},
+                              {
+                                timeZone: "UTC",
+                                hour12: true,
+                                hour: "numeric",
+                                minute: "numeric",
+                              }
+                            )
+                        )
+                      ),
+                      endingTime: firebase.firestore.Timestamp.fromMillis(
+                        new Date(
+                          Data.find(
+                            (input) => input.id == "date"
+                          ).value.trim() +
+                            " " +
+                            new Date(
+                              "1970-01-01T" +
+                                Data.find(
+                                  (input) => input.id == "endingTime"
+                                ).value.trim() +
+                                "Z"
+                            ).toLocaleTimeString(
+                              {},
+                              {
+                                timeZone: "UTC",
+                                hour12: true,
+                                hour: "numeric",
+                                minute: "numeric",
+                              }
+                            )
+                        )
+                      ),
+                    };
+
+                    attendanceLog[
+                      attendanceLog.findIndex(
+                        (log) => log.ClsId == ClsId.trim()
+                      )
+                    ] = attendanceLogToUpdate;
+
+                    await firebase
+                      .firestore()
+                      .collection(
+                        `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/attendance/`
+                      )
+                      .doc(StudId.trim())
+                      .set(
+                        {
+                          attendanceLog: attendanceLog,
+                        },
+                        { merge: true }
+                      );
+                  });
+                });
+            })
+          );
+        });
+
+      res.status(200).send({
+        status: 200,
+        message: "Class Updated successfully!",
+      });
+    } catch (err) {
+      console.log(err);
+      return res.status(400).send({ status: 400, error: err });
+    }
   }
 };
 
@@ -1874,8 +2573,13 @@ module.exports = {
   UpdateStudent,
   GetStudentsAssignments,
   GetExams,
+  GetHolidays,
+  CreateHolidays,
   CreateExam,
   GetClasses,
+  AddStudentAttendance,
+  CreateClass,
+  UpdateClass,
   UploadProfile,
   GetStudentProfile,
 };

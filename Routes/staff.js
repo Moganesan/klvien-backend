@@ -16,6 +16,7 @@ const {
   UploadExam,
   GetHolidays,
   GetClasses,
+  CreateClass,
   AddAttendance,
   GetBillings,
   AddFeedBack,
@@ -26,6 +27,9 @@ const {
   GetStudentsAssignments,
   CreateAssignment,
   CreateExam,
+  CreateHolidays,
+  UpdateClass,
+  AddStudentAttendance,
 } = require("../Controllers/staffController");
 const firebase = require("../Config/fire-admin");
 const upload = require("express-fileupload");
@@ -70,7 +74,17 @@ router.post("/students/exams", GetExams);
 
 router.post("/students/exams/create", CreateExam);
 
-router.post("/classes", GetClasses);
+router.post("/students/holidays", GetHolidays);
+
+router.post("/students/holidays/create", CreateHolidays);
+
+router.post("/students/classes", GetClasses);
+
+router.post("/students/classes/create", CreateClass);
+
+router.post("/students/classes/update", UpdateClass);
+
+router.post("/students/classes/addattendance", AddStudentAttendance);
 
 router.post("/student/uploadprofile", UploadProfile);
 
