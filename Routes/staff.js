@@ -30,6 +30,12 @@ const {
   CreateHolidays,
   UpdateClass,
   AddStudentAttendance,
+  CreateSubject,
+  GetStudentAssignment,
+  UpdateAssignmentStatus,
+  UpdateExamStatus,
+  GetExam,
+  GetRecentStudentsLogins,
 } = require("../Controllers/staffController");
 const firebase = require("../Config/fire-admin");
 const upload = require("express-fileupload");
@@ -62,7 +68,11 @@ router.get("/signout", (req, res) => {
 
 router.post("/subjects", GetSubjects);
 
+router.post("/subjects/create", CreateSubject);
+
 router.post("/students", GetStudents);
+
+router.post("/students/recentlogins", GetRecentStudentsLogins);
 
 router.post("/students/attendance", GetStudentsAttendance);
 
@@ -86,12 +96,22 @@ router.post("/students/classes/update", UpdateClass);
 
 router.post("/students/classes/addattendance", AddStudentAttendance);
 
+router.post("/students/assignments/updatestatus", UpdateAssignmentStatus);
+
+router.post("/students/exams/updatestatus", UpdateExamStatus);
+
 router.post("/student/uploadprofile", UploadProfile);
 
 router.get("/student/getprofile/:path", GetStudentProfile);
 
+router.get("/student/getassignment/:path", GetStudentAssignment);
+
+router.get("/student/getexam/:path", GetExam);
+
 router.post("/student/update", UpdateStudent);
 
 router.post("/student/create", CreateStudent);
+
+router.post("/feedback/add", AddFeedBack);
 
 module.exports = router;

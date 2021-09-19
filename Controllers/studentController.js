@@ -3,93 +3,102 @@ const firebase = require("../Config/fire-admin");
 const verify = async (req, res, next) => {
   if (req.session.auth) {
     const email = req.session.auth[0].logindetails.email;
-    const data = await firebase
-      .firestore()
-      .collection("students")
-      .doc(email)
-      .get()
-      .then((res) => res.data());
 
-    const institution = await firebase
-      .firestore()
-      .collection("institutions")
-      .doc(data.InId.trim())
-      .get()
-      .then((res) => res.data());
+    try {
+      await firebase.firestore().runTransaction(async (transaction) => {
+        const data = await transaction
+          .get(firebase.firestore().collection("students").doc(email))
+          .then((res) => res.data());
 
-    const response = [
-      {
-        logindetails: {
-          StudId: data.StudId.trim(),
-          InId: data.InId.trim(),
-          SemId: data.SemId.trim(),
-          profile: data.profile.trim(),
-          DepId: data.DepId.trim(),
-          type: data.type.trim(),
-          firstName: data.firstName.trim(),
-          lastName: data.lastName.trim(),
-          email: data.email.trim(),
-          googleAuth: data.googleAuth,
-        },
-        student: {
-          InId: data.InId,
-          DepId: data.DepId,
-          SemId: data.SemId,
-          StudId: data.StudId,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-          gender: data.gender,
-          profile: data.profile,
-          bloodGroup: data.bloodGroup,
-          religion: data.religion,
-          title: data.title,
-          country: data.country,
-          state: data.state,
-          district: data.district,
-          contMob: data.contMob,
-          age: data.age,
-          qualification: data.qualification,
-          dob: data.dob.toDate().toDateString(),
-          pincode: data.pincode,
-          fathName: data.fathName,
-          fathOccu: data.fathOccu,
-          fathMob: data.fathMob,
-          mothName: data.mothName,
-          mothOccu: data.mothOccu,
-          mothMob: data.mothMob,
-          community: data.community,
-          institution: {
-            name: institution.name,
-            email: institution.email,
-            address1: institution.address1,
-            address2: institution.address2,
-            address3: institution.address3,
-            country: institution.country,
-            state: institution.state,
-            district: institution.district,
-            postalCode: institution.postalCode,
-            phone: institution.phone,
+        const institution = await transaction
+          .get(
+            firebase
+              .firestore()
+              .collection("institutions")
+              .doc(data.InId.trim())
+          )
+          .then((res) => res.data());
+
+        const response = [
+          {
+            logindetails: {
+              StudId: data.StudId.trim(),
+              InId: data.InId.trim(),
+              SemId: data.SemId.trim(),
+              profile: data.profile.trim(),
+              DepId: data.DepId.trim(),
+              type: data.type.trim(),
+              firstName: data.firstName.trim(),
+              lastName: data.lastName.trim(),
+              email: data.email.trim(),
+              googleAuth: data.googleAuth,
+            },
+            student: {
+              InId: data.InId,
+              DepId: data.DepId,
+              SemId: data.SemId,
+              StudId: data.StudId,
+              firstName: data.firstName,
+              lastName: data.lastName,
+              email: data.email,
+              gender: data.gender,
+              profile: data.profile,
+              bloodGroup: data.bloodGroup,
+              religion: data.religion,
+              title: data.title,
+              country: data.country,
+              state: data.state,
+              district: data.district,
+              contMob: data.contMob,
+              age: data.age,
+              qualification: data.qualification,
+              dob: data.dob.toDate().toDateString(),
+              pincode: data.pincode,
+              fathName: data.fathName,
+              fathOccu: data.fathOccu,
+              fathMob: data.fathMob,
+              mothName: data.mothName,
+              mothOccu: data.mothOccu,
+              mothMob: data.mothMob,
+              community: data.community,
+              institution: {
+                name: institution.name,
+                email: institution.email,
+                address1: institution.address1,
+                address2: institution.address2,
+                address3: institution.address3,
+                country: institution.country,
+                state: institution.state,
+                district: institution.district,
+                postalCode: institution.postalCode,
+                phone: institution.phone,
+              },
+              crAt: data.crAt.toDate().toDateString(),
+              modAt: data.modAt.toDate().toDateString(),
+              depName: data.depName,
+              googleAuth: data.googleAuth,
+              type: data.type,
+              semName: data.semName,
+              contactAddress1: data.contactAddress1,
+              contactAddress2: data.contactAddress2,
+              contactAddress3: data.contact_address3,
+              addmisNo: data.addmisNo,
+            },
           },
-          crAt: data.crAt.toDate().toDateString(),
-          modAt: data.modAt.toDate().toDateString(),
-          depName: data.depName,
-          googleAuth: data.googleAuth,
-          type: data.type,
-          semName: data.semName,
-          contactAddress1: data.contactAddress1,
-          contactAddress2: data.contactAddress2,
-          contactAddress3: data.contact_address3,
-          addmisNo: data.addmisNo,
-        },
-      },
-    ];
-    req.session.auth = response;
-    return res.status(200).send({
-      status: 200,
-      data: response[0],
-      message: "login successful!",
-    });
+        ];
+        req.session.auth = response;
+        return res.status(200).send({
+          status: 200,
+          data: response[0],
+          message: "login successful!",
+        });
+      });
+    } catch (err) {
+      return res.status(400).send({
+        status: 400,
+        error: err,
+      });
+    }
   } else {
     next();
   }
@@ -105,97 +114,111 @@ const loginAccount = async (req, res, next) => {
         .then(async (decodedToken) => {
           const email = decodedToken.email;
 
-          //get student
-          const data = await firebase
-            .firestore()
-            .collection("students")
-            .doc(email)
-            .get()
-            .then((res) => res.data());
+          try {
+            await firebase.firestore().runTransaction(async (transaction) => {
+              //get student
+              const data = await transaction
+                .get(firebase.firestore().collection("students").doc(email))
+                .then((res) => res.data());
 
-          //get institute data
-          const institution = await firebase
-            .firestore()
-            .collection("institutions")
-            .doc(data.InId.trim())
-            .get()
-            .then((res) => res.data());
+              //get institute data
+              const institution = await transaction
+                .get(
+                  firebase
+                    .firestore()
+                    .collection("institutions")
+                    .doc(data.InId.trim())
+                )
+                .then((res) => res.data());
 
-          const response = [
-            {
-              logindetails: {
-                StudId: data.StudId.trim(),
-                InId: data.InId.trim(),
-                DepId: data.DepId.trim(),
-                SemId: data.SemId.trim(),
-                profile: data.profile.trim(),
-                type: data.type.trim(),
-                firstName: data.firstName.trim(),
-                lastName: data.lastName.trim(),
-                email: data.email.trim(),
-                googleAuth: data.googleAuth,
-              },
-              student: {
-                InId: data.InId,
-                DepId: data.DepId,
-                SemId: data.SemId,
-                StudId: data.StudId,
-                firstName: data.firstName,
-                lastName: data.lastName,
-                email: data.email,
-                gender: data.gender,
-                profile: data.profile,
-                bloodGroup: data.bloodGroup,
-                religion: data.religion,
-                title: data.title,
-                country: data.country,
-                state: data.state,
-                district: data.district,
-                contMob: data.contMob,
-                age: data.age,
-                qualification: data.qualification,
-                dob: data.dob.toDate().toDateString(),
-                pincode: data.pincode,
-                fathName: data.fathName,
-                fathOccu: data.fathOccu,
-                fathMob: data.fathMob,
-                mothName: data.mothName,
-                mothOccu: data.mothOccu,
-                mothMob: data.mothMob,
-                community: data.community,
-                institution: {
-                  name: institution.name,
-                  email: institution.email,
-                  address1: institution.address1,
-                  address2: institution.address2,
-                  address3: institution.address3,
-                  country: institution.country,
-                  state: institution.state,
-                  district: institution.district,
-                  postalCode: institution.postalCode,
-                  phone: institution.phone,
+              //update lastlogin
+              await transaction.update(
+                firebase.firestore().collection("students").doc(email),
+                { lastLogin: firebase.firestore.FieldValue.serverTimestamp() }
+              );
+
+              const response = [
+                {
+                  logindetails: {
+                    StudId: data.StudId.trim(),
+                    InId: data.InId.trim(),
+                    DepId: data.DepId.trim(),
+                    SemId: data.SemId.trim(),
+                    profile: data.profile.trim(),
+                    type: data.type.trim(),
+                    firstName: data.firstName.trim(),
+                    lastName: data.lastName.trim(),
+                    email: data.email.trim(),
+                    googleAuth: data.googleAuth,
+                  },
+                  student: {
+                    InId: data.InId,
+                    DepId: data.DepId,
+                    SemId: data.SemId,
+                    StudId: data.StudId,
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    email: data.email,
+                    gender: data.gender,
+                    profile: data.profile,
+                    bloodGroup: data.bloodGroup,
+                    religion: data.religion,
+                    title: data.title,
+                    country: data.country,
+                    state: data.state,
+                    district: data.district,
+                    contMob: data.contMob,
+                    age: data.age,
+                    qualification: data.qualification,
+                    dob: data.dob.toDate().toDateString(),
+                    pincode: data.pincode,
+                    fathName: data.fathName,
+                    fathOccu: data.fathOccu,
+                    fathMob: data.fathMob,
+                    mothName: data.mothName,
+                    mothOccu: data.mothOccu,
+                    mothMob: data.mothMob,
+                    community: data.community,
+                    institution: {
+                      name: institution.name,
+                      email: institution.email,
+                      address1: institution.address1,
+                      address2: institution.address2,
+                      address3: institution.address3,
+                      country: institution.country,
+                      state: institution.state,
+                      district: institution.district,
+                      postalCode: institution.postalCode,
+                      phone: institution.phone,
+                    },
+                    crAt: data.crAt.toDate().toDateString(),
+                    modAt: data.modAt.toDate().toDateString(),
+                    depName: data.depName,
+                    googleAuth: data.googleAuth,
+                    type: data.type,
+                    semName: data.semName,
+                    contactAddress1: data.contactAddress1,
+                    contactAddress2: data.contactAddress2,
+                    contactAddress3: data.contact_address3,
+                    addmisNo: data.addmisNo,
+                  },
                 },
-                crAt: data.crAt.toDate().toDateString(),
-                modAt: data.modAt.toDate().toDateString(),
-                depName: data.depName,
-                googleAuth: data.googleAuth,
-                type: data.type,
-                semName: data.semName,
-                contactAddress1: data.contactAddress1,
-                contactAddress2: data.contactAddress2,
-                contactAddress3: data.contact_address3,
-                addmisNo: data.addmisNo,
-              },
-            },
-          ];
+              ];
 
-          req.session.auth = response;
+              req.session.auth = response;
 
-          return res.status(200).send({
-            status: 200,
-            data: response[0],
-            message: "login successful",
-          });
+              return res.status(200).send({
+                status: 200,
+                data: response[0],
+                message: "login successful",
+              });
+            });
+          } catch (err) {
+            return res.status(400).send({
+              status: 400,
+              error: err,
+            });
+          }
         });
     } else {
       return res.status(403).send({
