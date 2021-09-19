@@ -329,178 +329,189 @@ const createAccount = async (req, res) => {
                 StudId: user.uid,
               },
               { merge: true }
-            );
-
-          //get student data
-          const data = await firebase
-            .firestore()
-            .collection("students")
-            .doc(email.trim())
-            .get()
-            .then((res) => res.data());
-
-          //get institute data
-          const institution = await firebase
-            .firestore()
-            .collection("institutions")
-            .doc(data.InId.trim())
-            .get()
-            .then((res) => res.data());
-
-          //add new student to institute
-          await firebase
-            .firestore()
-            .collection("institutions")
-            .doc(data.InId.trim())
-            .set(
-              {
-                students: [...institution.students, user.uid],
-              },
-              { merge: true }
-            );
-
-          //add student to database
-          await firebase
-            .firestore()
-            .collection(
-              `/institutions/${data.InId.trim()}/departments/${data.DepId.trim()}/students/`
             )
-            .doc(user.uid.trim())
-            .set(data);
+            .then(async () => {
+              await firebase.firestore().runTransaction(async (transaction) => {
+                //get student data
+                const data = await transaction
+                  .get(
+                    firebase
+                      .firestore()
+                      .collection("students")
+                      .doc(email.trim())
+                  )
+                  .then((res) => res.data());
 
-          //get subjects
-          const subjects = await firebase
-            .firestore()
-            .collection(
-              `/institutions/${data.InId.trim()}/departments/${data.DepId.trim()}/semesters/${data.SemId.trim()}/subjects/`
-            )
-            .get()
-            .then((res) =>
-              res.docs.map((doc) => {
-                const data = doc.data();
-                const id = doc.id;
-                return { _id: id, ...data };
-              })
-            );
+                //get institute data
+                const institution = await transaction
+                  .get(
+                    firebase
+                      .firestore()
+                      .collection("institutions")
+                      .doc(data.InId.trim())
+                  )
+                  .then((res) => res.data());
 
-          //add attendance
-          await firebase
-            .firestore()
-            .collection(
-              `/institutions/${data.InId.trim()}/departments/${data.DepId.trim()}/semesters/${data.SemId.trim()}/attendance/`
-            )
-            .doc(data.StudId.trim())
-            .set({
-              DepId: data.DepId.trim(),
-              InId: data.InId.trim(),
-              SemId: data.SemId.trim(),
-              StudId: data.StudId.trim(),
-              currentMonthPercentage: 0,
-              overAllPeriods: 0,
-              overAllPrecent: 0,
-              overAllPercentage: 0,
-              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-              attendanceLog: [],
-              subjectList: subjects.map((subject) => {
-                return {
-                  SubId: subject._id,
-                  subName: subject.subName,
-                  subCode: subject.subCode,
-                  crAt: subject.crAt,
-                  crBy: subject.crBy,
-                  classes: {},
-                  currentMonthPercentage: 0,
-                  overAllPercentage: 0,
-                  overAllPeriods: 0,
-                  overAllPrecent: 0,
-                };
-              }),
+                //get subjects
+                const subjects = await transaction
+                  .get(
+                    firebase
+                      .firestore()
+                      .collection(
+                        `/institutions/${data.InId.trim()}/departments/${data.DepId.trim()}/semesters/${data.SemId.trim()}/subjects/`
+                      )
+                  )
+                  .then((res) =>
+                    res.docs.map((doc) => {
+                      const data = doc.data();
+                      const id = doc.id;
+                      return { _id: id, ...data };
+                    })
+                  );
+
+                //add new student to institute
+                await transaction.set(
+                  firebase
+                    .firestore()
+                    .collection("institutions")
+                    .doc(data.InId.trim()),
+                  {
+                    students: [...institution.students, user.uid],
+                  },
+                  { merge: true }
+                );
+
+                //add student to database
+                await transaction.set(
+                  firebase
+                    .firestore()
+                    .collection(
+                      `/institutions/${data.InId.trim()}/departments/${data.DepId.trim()}/students/`
+                    )
+                    .doc(user.uid.trim()),
+                  data
+                );
+
+                //add attendance
+                await transaction.set(
+                  firebase
+                    .firestore()
+                    .collection(
+                      `/institutions/${data.InId.trim()}/departments/${data.DepId.trim()}/semesters/${data.SemId.trim()}/attendance/`
+                    )
+                    .doc(data.StudId.trim()),
+                  {
+                    DepId: data.DepId.trim(),
+                    InId: data.InId.trim(),
+                    SemId: data.SemId.trim(),
+                    StudId: data.StudId.trim(),
+                    currentMonthPercentage: 0,
+                    overAllPeriods: 0,
+                    overAllPrecent: 0,
+                    overAllPercentage: 0,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    attendanceLog: [],
+                    subjectList: subjects.map((subject) => {
+                      return {
+                        SubId: subject._id,
+                        subName: subject.subName,
+                        subCode: subject.subCode,
+                        crAt: subject.crAt,
+                        crBy: subject.crBy,
+                        classes: {},
+                        currentMonthPercentage: 0,
+                        overAllPercentage: 0,
+                        overAllPeriods: 0,
+                        overAllPrecent: 0,
+                      };
+                    }),
+                  }
+                );
+
+                const response = [
+                  {
+                    logindetails: {
+                      StudId: data.StudId.trim(),
+                      InId: data.InId.trim(),
+                      DepId: data.DepId.trim(),
+                      SemId: data.SemId.trim(),
+                      profile: data.profile.trim(),
+                      type: data.type.trim(),
+                      firstName: data.firstName.trim(),
+                      lastName: data.lastName.trim(),
+                      email: data.email.trim(),
+                      googleAuth: data.googleAuth,
+                    },
+                    student: {
+                      InId: data.InId,
+                      DepId: data.DepId,
+                      SemId: data.SemId,
+                      StudId: data.StudId,
+                      firstName: data.firstName,
+                      lastName: data.lastName,
+                      email: data.email,
+                      gender: data.gender,
+                      profile: data.profile,
+                      bloodGroup: data.bloodGroup,
+                      religion: data.religion,
+                      title: data.title,
+                      country: data.country,
+                      state: data.state,
+                      district: data.district,
+                      contMob: data.contMob,
+                      age: data.age,
+                      qualification: data.qualification,
+                      dob: data.dob.toDate().toDateString(),
+                      pincode: data.pincode,
+                      fathName: data.fathName,
+                      fathOccu: data.fathOccu,
+                      fathMob: data.fathMob,
+                      mothName: data.mothName,
+                      mothOccu: data.mothOccu,
+                      mothMob: data.mothMob,
+                      community: data.community,
+                      institution: {
+                        name: institution.name,
+                        email: institution.email,
+                        address1: institution.address1,
+                        address2: institution.address2,
+                        address3: institution.address3,
+                        country: institution.country,
+                        state: institution.state,
+                        district: institution.district,
+                        postalCode: institution.postalCode,
+                        phone: institution.phone,
+                      },
+                      crAt: data.crAt.toDate().toDateString(),
+                      modAt: data.modAt.toDate().toDateString(),
+                      depName: data.depName,
+                      googleAuth: data.googleAuth,
+                      type: data.type,
+                      semName: data.semName,
+                      contactAddress1: data.contactAddress1,
+                      contactAddress2: data.contactAddress2,
+                      contactAddress3: data.contact_address3,
+                      addmisNo: data.addmisNo,
+                    },
+                  },
+                ];
+                req.session.auth = response;
+                return res.status(200).send({
+                  status: 200,
+                  data: response[0],
+                  message: "login successful!",
+                });
+              });
             });
-
-          const response = [
-            {
-              logindetails: {
-                StudId: data.StudId.trim(),
-                InId: data.InId.trim(),
-                DepId: data.DepId.trim(),
-                SemId: data.SemId.trim(),
-                profile: data.profile.trim(),
-                type: data.type.trim(),
-                firstName: data.firstName.trim(),
-                lastName: data.lastName.trim(),
-                email: data.email.trim(),
-                googleAuth: data.googleAuth,
-              },
-              student: {
-                InId: data.InId,
-                DepId: data.DepId,
-                SemId: data.SemId,
-                StudId: data.StudId,
-                firstName: data.firstName,
-                lastName: data.lastName,
-                email: data.email,
-                gender: data.gender,
-                profile: data.profile,
-                bloodGroup: data.bloodGroup,
-                religion: data.religion,
-                title: data.title,
-                country: data.country,
-                state: data.state,
-                district: data.district,
-                contMob: data.contMob,
-                age: data.age,
-                qualification: data.qualification,
-                dob: data.dob.toDate().toDateString(),
-                pincode: data.pincode,
-                fathName: data.fathName,
-                fathOccu: data.fathOccu,
-                fathMob: data.fathMob,
-                mothName: data.mothName,
-                mothOccu: data.mothOccu,
-                mothMob: data.mothMob,
-                community: data.community,
-                institution: {
-                  name: institution.name,
-                  email: institution.email,
-                  address1: institution.address1,
-                  address2: institution.address2,
-                  address3: institution.address3,
-                  country: institution.country,
-                  state: institution.state,
-                  district: institution.district,
-                  postalCode: institution.postalCode,
-                  phone: institution.phone,
-                },
-                crAt: data.crAt.toDate().toDateString(),
-                modAt: data.modAt.toDate().toDateString(),
-                depName: data.depName,
-                googleAuth: data.googleAuth,
-                type: data.type,
-                semName: data.semName,
-                contactAddress1: data.contactAddress1,
-                contactAddress2: data.contactAddress2,
-                contactAddress3: data.contact_address3,
-                addmisNo: data.addmisNo,
-              },
-            },
-          ];
-          req.session.auth = response;
-          return res.status(200).send({
-            status: 200,
-            data: response[0],
-            message: "login successful!",
-          });
-        })
-        .catch((err) => {
-          return res.status(409).send({
-            status: 409,
-            error: err,
-            message: err.message,
-          });
         });
     }
   } catch (err) {
-    return res.status(400).send({ status: 400, error: err });
+    console.log(err);
+    return res.status(409).send({
+      status: 409,
+      error: err,
+      message: err.message,
+    });
   }
 };
 
@@ -575,9 +586,9 @@ const GetAssignment = async (req, res) => {
         status: 200,
         data: data.map((data) => ({
           _id: data.id.toString().trim(),
-          startingDate: data.startingDate.toDate().toDateString(),
-          endingDate: data.endingDate.toDate().toDateString(),
-          project: data.Project.toString().trim(),
+          startingDate: data.date.toDate().toDateString(),
+          endingDate: data.dueDate.toDate().toDateString(),
+          project: data.project.toString().trim(),
           status: data.studentsStatus
             .find((student) => student.StudId === StudId)
             ["status"].toString()
@@ -603,43 +614,52 @@ const UploadAssignment = async (req, res) => {
       console.log(err);
       return res.status(500).send(err);
     }
+    try {
+      await firebase.firestore().runTransaction(async (transaction) => {
+        await transaction
+          .get(
+            firebase
+              .firestore()
+              .collection(
+                `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/assignments/`
+              )
+              .doc(AssgId.trim())
+          )
+          .then(async (res) => {
+            const data = res.data();
+            let studentsStatus = data.studentsStatus;
+            let studentStatusToUpdate = studentsStatus.find(
+              (status) => status.StudId == StudId.trim()
+            );
+            studentStatusToUpdate.status = "CHECKING";
+            studentStatusToUpdate.file = `IN${InId}-ASS${AssgId}-STUD${StudId}-${file.name}`;
 
-    await firebase
-      .firestore()
-      .collectionGroup("assignments")
-      .where("_id", "==", AssgId.trim())
-      .where("InId", "==", InId.trim())
-      .where("DepId", "==", DepId.trim())
-      .where("SemId", "==", SemId.trim())
-      .where("students", "array-contains-any", [StudId.trim()])
-      .get()
-      .then((res) => {
-        res.docs.map((doc) => {
-          const data = doc.data();
-          firebase
-            .firestore()
-            .collection(
-              `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/assignments/`
-            )
-            .doc(AssgId.trim())
-            .set(
+            studentsStatus[
+              studentsStatus.find((status) => status.StudId == StudId.trim())
+            ] = studentStatusToUpdate;
+
+            await transaction.set(
+              firebase
+                .firestore()
+                .collection(
+                  `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/assignments/`
+                )
+                .doc(AssgId.trim()),
               {
-                studentsStatus: {
-                  [StudId]: {
-                    StudId: "TEuCqkVonRgvzvfYU86z",
-                    status: "Checking",
-                    file: location,
-                  },
-                },
+                studentsStatus: studentsStatus,
               },
               { merge: true }
             );
+          });
+
+        res.status(200).send({
+          status: 200,
+          message: "Assignment Status Updated Successfully!",
         });
       });
-    return res.send({
-      status: 200,
-      message: "success",
-    });
+    } catch (err) {
+      return res.status(400).send({ status: 400, error: err });
+    }
   });
 };
 
@@ -673,14 +693,14 @@ const GetExams = async (req, res) => {
       data: data.map((obj) => ({
         _id: obj.id,
         subject: obj.subject.toString().trim(),
-        subjectCode: obj.subject_code.toString().trim(),
-        examCode: obj.exam_code.toString().trim(),
+        subjectCode: obj.subCode.toString().trim(),
+        examCode: obj.examCode.toString().trim(),
         date: obj.date.toDate().toDateString(),
-        startingTime: obj.starting_time
+        startingTime: obj.startingTime
           .toDate()
           .toLocaleTimeString()
           .toUpperCase(),
-        endingTime: obj.ending_time.toDate().toLocaleTimeString().toUpperCase(),
+        endingTime: obj.endingTime.toDate().toLocaleTimeString().toUpperCase(),
         status: obj.studentsStatus
           .find((student) => student.StudId === StudId)
           ["status"].toString()
@@ -690,6 +710,7 @@ const GetExams = async (req, res) => {
       })),
     });
   } catch (err) {
+    console.log(err);
     return res.status(400).send({ status: 400, error: err });
   }
 };
@@ -704,46 +725,58 @@ const UploadExam = async (req, res) => {
   const location = `./Assets/exams/IN${InId}-Exam${ExamId}-STUD${StudId}-${file.name}`;
   file.mv(location, async (err) => {
     if (err) {
-      console.log(err);
       return res.status(500).send(err);
     }
+    try {
+      await firebase.firestore().runTransaction(async (transaction) => {
+        await transaction
+          .get(
+            firebase
+              .firestore()
+              .collection(
+                `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/exams/`
+              )
+              .doc(ExamId.trim())
+          )
+          .then(async (res) => {
+            const data = res.data();
+            let studentsStatus = data.studentsStatus;
+            let studentStatusToUpdate = studentsStatus.find(
+              (status) => status.StudId == StudId.trim()
+            );
+            studentStatusToUpdate.status = "CHECKING";
+            studentStatusToUpdate.file = `IN${InId}-Exam${ExamId}-STUD${StudId}-${file.name}`;
 
-    await firebase
-      .firestore()
-      .collectionGroup("exams")
-      .where("_id", "==", ExamId.trim())
-      .where("InId", "==", InId.trim())
-      .where("DepId", "==", DepId.trim())
-      .where("SemId", "==", SemId.trim())
-      .where("students", "array-contains-any", [StudId.trim()])
-      .get()
-      .then((res) => {
-        res.docs.map((doc) => {
-          const data = doc.data();
-          firebase
-            .firestore()
-            .collection(
-              `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/exams/`
-            )
-            .doc(ExamId.trim())
-            .set(
+            studentsStatus[
+              studentsStatus.find((status) => status.StudId == StudId.trim())
+            ] = studentStatusToUpdate;
+
+            await transaction.set(
+              firebase
+                .firestore()
+                .collection(
+                  `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/exams/`
+                )
+                .doc(ExamId.trim()),
               {
-                studentsStatus: {
-                  [StudId]: {
-                    StudId: "TEuCqkVonRgvzvfYU86z",
-                    status: "Checking",
-                    file: location,
-                  },
-                },
+                studentsStatus: studentsStatus,
               },
               { merge: true }
             );
+          });
+
+        res.status(200).send({
+          status: 200,
+          message: "Exams Status Updated Successfully!",
         });
       });
-    return res.send({
-      status: 200,
-      message: "success",
-    });
+    } catch (err) {
+      res.status(400).send({
+        status: 400,
+        error: err,
+        message: err,
+      });
+    }
   });
 };
 
@@ -776,12 +809,13 @@ const GetHolidays = async (req, res) => {
       data: data.map((obj) => ({
         _id: obj.id,
         event: obj.event.toString().trim(),
-        startingDate: obj.starting_date.toDate().toDateString().toUpperCase(),
-        endingDate: obj.ending_date.toDate().toDateString().toUpperCase(),
+        startingDate: obj.startingDate.toDate().toDateString().toUpperCase(),
+        endingDate: obj.endingDate.toDate().toDateString().toUpperCase(),
         message: obj.message.toString().trim(),
       })),
     });
   } catch (err) {
+    console.log(err);
     return res.status(400).send({ status: 400, error: err });
   }
 };
@@ -835,20 +869,20 @@ const GetClasses = async (req, res) => {
         SemId: obj.SemId,
         StaffId: obj.StaffId,
         date: obj.date.toDate().toDateString().toUpperCase(),
-        start: obj.start
+        start: obj.startingTime
           .toDate()
           .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
           .toUpperCase(),
-        end: obj.end
+        end: obj.endingTime
           .toDate()
           .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
           .toUpperCase(),
         meeting: obj.meeting.join_url ? obj.meeting : false,
-        duration: timeDeff(obj.start.toDate(), obj.end.toDate()),
-        subject: obj.SubName.toString().trim(),
+        duration: timeDeff(obj.startingTime.toDate(), obj.endingTime.toDate()),
+        subject: obj.subject.toString().trim(),
         subId: obj.SubId.toString().trim(),
-        chapter: obj.ChapterName.toString().trim(),
-        staffName: obj.StaffName.toString().trim(),
+        chapter: obj.chapter.toString().trim(),
+        staffName: obj.staffName.toString().trim(),
       })),
     });
   } catch (err) {
@@ -859,59 +893,74 @@ const GetClasses = async (req, res) => {
 const AddAttendance = async (req, res) => {
   const { InId, DepId, SemId, StudId, SubId, ClsId } = req.body;
   try {
-    await firebase
-      .firestore()
-      .collectionGroup("attendance")
-      .where("InId", "==", InId.trim())
-      .where("DepId", "==", DepId.trim())
-      .where("SemId", "==", SemId.trim())
-      .where("StudId", "==", StudId.trim())
-      .get()
-      .then((data) => {
-        data.docs.map(async (doc) => {
-          const data = doc.data();
-          const subjectList = data.subjectList;
+    await firebase.firestore().runTransaction(async (transaction) => {
+      await transaction
+        .get(
+          firebase
+            .firestore()
+            .collectionGroup("attendance")
+            .where("InId", "==", InId.trim())
+            .where("DepId", "==", DepId.trim())
+            .where("SemId", "==", SemId.trim())
+            .where("StudId", "==", StudId.trim())
+        )
+        .then((data) => {
+          data.docs.map(async (doc) => {
+            const data = doc.data();
+            const subjectList = data.subjectList;
+            const attendanceLog = data.attendanceLog;
 
-          // Assing desired element of object to local javascript variable
+            let attendanceLogToUpdate =
+              attendanceLog[
+                attendanceLog.findIndex((log) => log.ClsId == ClsId.trim())
+              ];
 
-          const subjectToupdate =
+            attendanceLogToUpdate.status = "PRECENT";
+
+            attendanceLog[
+              attendanceLog.findIndex((log) => log.ClsId == ClsId.trim())
+            ] = attendanceLogToUpdate;
+
+            const subjectToupdate =
+              subjectList[
+                subjectList.findIndex(
+                  (subject) => subject.SubId === SubId.trim()
+                )
+              ];
+
+            subjectToupdate.overAllPrecent = subjectToupdate.overAllPrecent + 1;
+
+            subjectToupdate.classes = {
+              ...subjectToupdate.classes,
+              [ClsId.trim()]: {
+                ...subjectToupdate.classes[ClsId.trim()],
+                status: "PRECENT",
+              },
+            };
+
             subjectList[
               subjectList.findIndex((subject) => subject.SubId === SubId.trim())
-            ];
+            ] = subjectToupdate;
 
-          // Update field of the element assigned to local javascript variable
-
-          subjectToupdate.classes = {
-            ...subjectToupdate.classes,
-            [ClsId]: {
-              ...subjectToupdate.classes[ClsId],
-              status: "precent",
-            },
-          };
-
-          // reassign object to local array variable
-          subjectList[
-            subjectList.findIndex((subject) => subject.SubId === SubId.trim())
-          ] = subjectToupdate;
-
-          await firebase
-            .firestore()
-            .collection(
-              `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/attendance/`
-            )
-            .doc(StudId.trim())
-            .set(
+            await transaction.set(
+              firebase
+                .firestore()
+                .collection(
+                  `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/attendance/`
+                )
+                .doc(StudId.trim()),
               {
                 overAllPrecent: firebase.firestore.FieldValue.increment(+1),
                 subjectList: subjectList,
+                attendanceLog: attendanceLog,
               },
               { merge: true }
-            )
-            .then((response) => res.send({ status: 200, data: response }))
-            .catch((err) => res.send({ status: 500, error: err }));
-        });
-      })
-      .catch((err) => console.log(err));
+            );
+          });
+        })
+        .then((response) => res.send({ status: 200, data: response }))
+        .catch((err) => res.send({ status: 200, error: err }));
+    });
   } catch (err) {
     return res.status(400).send({ status: 400, error: err });
   }

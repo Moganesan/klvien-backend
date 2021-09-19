@@ -923,6 +923,117 @@ const GetStudentsAssignments = async (req, res) => {
   }
 };
 
+const GetStudentsList = async (req, res) => {
+  const { InId, DepId, SemId } = req.body;
+  try {
+    const students = await firebase
+      .firestore()
+      .collection("students")
+      .where("InId", "==", InId.trim())
+      .where("DepId", "==", DepId.trim())
+      .where("SemId", "==", SemId.trim())
+      .get()
+      .then((res) => res.docs.map((doc) => doc.data()));
+    if (!students) {
+      res.status(404).send({
+        status: 404,
+        data: "Students not found!",
+      });
+
+      return req.status(200).send({
+        status: 200,
+        data: students,
+      });
+    }
+  } catch (err) {
+    res.status(400).send(err);
+  }
+};
+
+const GetAssignmentsList = async (req, res) => {
+  const { InId, DepId, SemId } = req.body;
+  try {
+    const assignments = await firebase
+      .firestore()
+      .collectionGroup("assignments")
+      .where("InId", "==", InId.trim())
+      .where("DepId", "==", DepId.trim())
+      .where("SemId", "==", SemId.trim())
+      .get()
+      .then((res) => res.docs.map((doc) => doc.data()));
+
+    if (!assignments) {
+      res.status(404).send({
+        status: 404,
+        data: "assignments not found",
+      });
+    }
+
+    return res.status(200).send({
+      status: 200,
+      data: assignments,
+    });
+  } catch (err) {
+    res.status(400).send(err);
+  }
+};
+
+const GetExamsList = async (req, res) => {
+  const { InId, DepId, SemId } = req.body;
+  try {
+    const exams = await firebase
+      .firestore()
+      .collectionGroup("exams")
+      .where("InId", "==", InId.trim())
+      .where("DepId", "==", DepId.trim())
+      .where("SemId", "==", SemId.trim())
+      .get()
+      .then((res) => res.docs.map((doc) => doc.data()));
+
+    if (!exams) {
+      res.status(404).send({
+        status: 404,
+        data: "exams not found",
+      });
+    }
+
+    return res.status(200).send({
+      status: 200,
+      data: exams,
+    });
+  } catch (err) {
+    res.status(400).send(err);
+  }
+};
+
+const GetClassesList = async (req, res) => {
+  const { InId, DepId, SemId } = req.body;
+  try {
+    const classes = await firebase
+      .firestore()
+      .collectionGroup("classes")
+      .where("InId", "==", InId.trim())
+      .where("DepId", "==", DepId.trim())
+      .where("SemId", "==", SemId.trim())
+      .get()
+      .then((res) => res.docs.map((doc) => doc.data()));
+
+    if (!classes) {
+      res.status(404).send({
+        status: 404,
+        data: "classes not found",
+      });
+    }
+
+    return res.status(200).send({
+      status: 200,
+      data: classes,
+    });
+  } catch (err) {
+    res.status(400).send(err);
+  }
+};
+
 const CreateAssignment = async (req, res) => {
   const { InId, DepId, SemId, StaffId, Data } = req.body;
 
@@ -2971,7 +3082,10 @@ module.exports = {
   CreateStudent,
   UpdateStudent,
   GetStudentsAssignments,
+  GetClassesList,
   GetExams,
+  GetExamsList,
+  GetAssignmentsList,
   GetExam,
   GetHolidays,
   CreateHolidays,
@@ -2982,6 +3096,7 @@ module.exports = {
   AddStudentAttendance,
   CreateClass,
   UpdateAssignmentStatus,
+  GetStudentsList,
   GetRecentStudentsLogins,
   UpdateExamStatus,
   UpdateClass,
