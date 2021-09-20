@@ -22,6 +22,7 @@ app.use(
     ],
     method: ["GET", "POST"],
     credentials: true,
+    exposedHeaders: ["set-cookie"],
   })
 );
 
@@ -39,12 +40,10 @@ app.use(
     saveUninitialized: false,
     store: SessionDB,
     cookie: {
-      sameSite: "none",
       secure: true,
-      httpOnly: false,
-      name: "auth",
       maxAge: 60 * 60 * 24 * 5 * 1000,
     },
+    unset: "destroy",
   })
 );
 
