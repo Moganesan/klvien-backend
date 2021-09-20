@@ -39,9 +39,9 @@ app.use(
     saveUninitialized: false,
     store: SessionDB,
     cookie: {
+      httpOnly: false,
+      SameSite: "None",
       secure: true,
-      httpOnly: true,
-      sameSite: "none",
       name: "auth",
       maxAge: 60 * 60 * 24 * 5 * 1000,
     },
