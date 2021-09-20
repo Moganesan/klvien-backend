@@ -41,7 +41,7 @@ app.use(
     store: SessionDB,
     cookie: {
       httpOnly: true,
-      secure: "auto",
+      secure: true,
       sameSite: "none",
       maxAge: 60 * 60 * 24 * 5 * 1000,
     },
