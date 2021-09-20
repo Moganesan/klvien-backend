@@ -40,7 +40,6 @@ app.use(
     saveUninitialized: false,
     store: SessionDB,
     cookie: {
-      secure: true,
       maxAge: 60 * 60 * 24 * 5 * 1000,
     },
     unset: "destroy",
