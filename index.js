@@ -33,7 +33,9 @@ const SessionDB = new FirebaseStore({
   database: firebase.database(),
 });
 
-app.set("trust proxy", 1);
+if (process.env.NODE_ENV == "production") {
+  app.set("trust proxy", 4);
+}
 app.use(
   session({
     secret: process.env.SESSION_KEY,
@@ -41,7 +43,8 @@ app.use(
     saveUninitialized: false,
     store: SessionDB,
     cookie: {
-      secure: true,
+      httpOnly: process.env.NODE_ENV == "production" ? true : false,
+      secure: process.env.NODE_ENV == "production" ? true : false,
       sameSite: "none",
       maxAge: 60 * 60 * 24 * 5 * 1000,
     },
