@@ -14,12 +14,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:3001",
-      "https://klvien-staffs-moganesan.vercel.app",
-      "https://klvien-students.herokuapp.com",
-    ],
+    origin: ["http://localhost:3000", "http://localhost:3001"],
     method: ["GET", "POST"],
     credentials: true,
     exposedHeaders: ["set-cookie"],
