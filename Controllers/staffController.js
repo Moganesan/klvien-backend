@@ -2559,7 +2559,6 @@ const UpdateClass = async (req, res) => {
 
 const UploadProfile = async (req, res) => {
   const { name, StudId, InId } = req.body;
-
   try {
     if (name && StudId && InId) {
       await firebase.firestore().runTransaction(async (transaction) => {
@@ -2571,44 +2570,41 @@ const UploadProfile = async (req, res) => {
         }
         const fileName = name.split(/\s/).join("");
 
-        await transaction
+        const student = await transaction
           .get(
             firebase
               .firestore()
               .collection("students")
               .where("StudId", "==", StudId.trim())
           )
-          .then((docs) => {
-            docs.docs.map(async (doc) => {
-              const data = doc.data();
-              const email = data.email;
-              const location = `./Assets/studentProfiles/IN${InId}-STUD${email}-${fileName}`;
-              file.mv(location, async (err) => {
-                if (err) {
-                  console.log(err);
-                  return res.status(500).send(err);
-                }
-                await transaction.set(
-                  firebase
-                    .firestore()
-                    .collection("/students")
-                    .doc(email.trim()),
-                  {
-                    profile: `IN${InId}-STUD${email}-${fileName}`,
-                  },
-                  { merge: true }
-                );
-              });
+          .then((res) => res.docs.map((doc) => doc.data())[0]);
 
-              return res.send({
-                status: 200,
-                message: "success",
-              });
-            });
-          });
+        const email = student.email;
+        const location = `./Assets/studentProfiles/IN${InId}-STUD${email}-${fileName}`;
+
+        await transaction.set(
+          firebase.firestore().collection("students").doc(email.trim()),
+          {
+            profile: `IN${InId}-STUD${email}-${fileName}`,
+          },
+          { merge: true }
+        );
+
+        file.mv(location, async (err) => {
+          if (err) {
+            console.log(err);
+            return res.status(500).send(err);
+          }
+        });
+
+        return res.send({
+          status: 200,
+          message: "success",
+        });
       });
     }
   } catch (err) {
+    console.log(err);
     return res.status(400).send({ status: 400, error: err });
   }
 };
