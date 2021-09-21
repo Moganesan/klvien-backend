@@ -17,7 +17,7 @@ app.use(
     origin: [
       "http://localhost:3000",
       "http://localhost:3001",
-      "https://klvien-staffs-moganesan.vercel.app/",
+      "https://klvien-staffs-moganesan.vercel.app",
       "https://klvien-students.herokuapp.com",
     ],
     method: ["GET", "POST"],
