@@ -1616,9 +1616,9 @@ const CreateSubject = async (req, res) => {
     try {
       await firebase.firestore().runTransaction(async (transaction) => {
         //get student id's
-        const StudentIds = transaction
+        const StudentIds = await transaction
           .get(
-            await firebase
+            firebase
               .firestore()
               .collection("students")
               .where("InId", "==", InId.trim())
