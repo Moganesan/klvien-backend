@@ -42,7 +42,6 @@ app.use(
     resave: false,
     saveUninitialized: false,
     store: SessionDB,
-    name: "auth",
     cookie: {
       httpOnly: process.env.NODE_ENV == "production" ? true : false,
       secure: process.env.NODE_ENV == "production" ? true : false,
