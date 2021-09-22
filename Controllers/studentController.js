@@ -679,6 +679,7 @@ const UploadAssignment = async (req, res) => {
   const location = `./Assets/assignments/IN${InId}-ASS${AssgId}-STUD${StudId}-${file.name}`;
   file.mv(location, async (err) => {
     if (err) {
+      console.log(err);
       return res.status(500).send(err);
     }
     try {
