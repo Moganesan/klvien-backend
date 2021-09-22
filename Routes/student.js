@@ -16,6 +16,7 @@ const {
   AddFeedBack,
   GetProfile,
   GetStudentAssignment,
+  GetStudentExam,
 } = require("../Controllers/studentController");
 const firebase = require("../Config/fire-admin");
 const upload = require("express-fileupload");
@@ -93,5 +94,7 @@ router.post("/feedback/add", AddFeedBack);
 router.get("/getprofile/:path", GetProfile);
 
 router.get("/getassignment/:path", GetStudentAssignment);
+
+router.get("/getexam/:path", GetStudentExam);
 
 module.exports = router;

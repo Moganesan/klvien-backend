@@ -705,7 +705,9 @@ const UploadAssignment = async (req, res) => {
               (status) => status.StudId == StudId.trim()
             );
             studentStatusToUpdate.status = "CHECKING";
-            studentStatusToUpdate.file = location;
+            studentStatusToUpdate.file = `IN${InId}-ASS${AssgId}-STUD${StudId}-${file.name
+              .replace(/\s/g, "")
+              .trim()}`;
 
             studentsStatus[
               studentsStatus.find((status) => status.StudId == StudId.trim())
@@ -1158,6 +1160,10 @@ const GetStudentAssignment = (req, res) => {
   res.download(`./Assets/assignments/${req.params.path}`);
 };
 
+const GetStudentExam = (req, res) => {
+  res.download(`./Assets/exams/${req.params.path}`);
+};
+
 module.exports = {
   loginAccount,
   googleLogin,
@@ -1174,5 +1180,6 @@ module.exports = {
   GetClasses,
   AddAttendance,
   AddFeedBack,
+  GetStudentExam,
   GetProfile,
 };
