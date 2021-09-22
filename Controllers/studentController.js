@@ -657,9 +657,9 @@ const GetAssignment = async (req, res) => {
           startingDate: data.date.toDate().toDateString(),
           endingDate: data.dueDate.toDate().toDateString(),
           project: data.project.toString().trim(),
-          file: data.studentsStatus
-            .find((student) => student.StudId === StudId)
-            ["file"].trim(),
+          file: data.studentsStatus.find(
+            (student) => student.StudId === StudId
+          )["file"],
           status: data.studentsStatus
             .find((student) => student.StudId === StudId)
             ["status"].toString()
