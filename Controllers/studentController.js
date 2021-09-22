@@ -917,16 +917,24 @@ const GetClasses = async (req, res) => {
                 const data = doc.data();
                 const id = doc.id;
 
-                const attendace = await transaction
+                const attendance = await transaction
                   .get(
                     firebase
                       .firestore()
                       .collectionGroup("attendance")
                       .where("StudId", "==", StudId.trim())
                   )
-                  .then((docs) => docs.docs.map((doc) => doc.data())[0]);
-                console.log(attendace);
-                return { id, ...data };
+                  .then(
+                    (docs) =>
+                      docs.docs.map((doc) => {
+                        const data = doc.data();
+                        attendance = data.attendanceLog.find(
+                          (cls) => cls.ClsId == id
+                        );
+                      })[0]
+                  );
+
+                return { id, attendance, ...data };
               })
             )
         );
@@ -952,6 +960,7 @@ const GetClasses = async (req, res) => {
           DepId: obj.DepId,
           SemId: obj.SemId,
           StaffId: obj.StaffId,
+          attendanceLog: obj.attendance,
           date: obj.date.toDate().toDateString().toUpperCase(),
           start: obj.startingTime
             .toDate()
