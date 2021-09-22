@@ -657,6 +657,9 @@ const GetAssignment = async (req, res) => {
           startingDate: data.date.toDate().toDateString(),
           endingDate: data.dueDate.toDate().toDateString(),
           project: data.project.toString().trim(),
+          file: data.studentsStatus
+            .find((student) => student.StudId === StudId)
+            ["file"].trim(),
           status: data.studentsStatus
             .find((student) => student.StudId === StudId)
             ["status"].toString()
@@ -676,7 +679,9 @@ const UploadAssignment = async (req, res) => {
     res.status(400).send({ status: 400, error: "No file uploaded!" });
   }
 
-  const location = `./Assets/assignments/IN${InId}-ASS${AssgId}-STUD${StudId}-${file.name}`;
+  const location = `./Assets/assignments/IN${InId}-ASS${AssgId}-STUD${StudId}-${file.name
+    .replace(/\s/g, "")
+    .trim()}`;
   file.mv(location, async (err) => {
     if (err) {
       console.log(err);
@@ -700,7 +705,7 @@ const UploadAssignment = async (req, res) => {
               (status) => status.StudId == StudId.trim()
             );
             studentStatusToUpdate.status = "CHECKING";
-            studentStatusToUpdate.file = `IN${InId}-ASS${AssgId}-STUD${StudId}-${file.name}`;
+            studentStatusToUpdate.file = location;
 
             studentsStatus[
               studentsStatus.find((status) => status.StudId == StudId.trim())
