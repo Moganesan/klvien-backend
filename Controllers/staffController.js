@@ -1629,36 +1629,41 @@ const CreateSubject = async (req, res) => {
             res.docs.map((doc) => doc.data().StudId).filter((id) => id != "")
           );
 
-        //add subject details to subject collection
-        const SubId = transaction
-          .set(
-            await firebase
-              .firestore()
-              .collection(
-                `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/subjects/`
-              )
-              .doc(),
-            {
-              InId: InId.trim().toString(),
-              DepId: Data.find((input) => input.id == "department")
-                ["value"]._id.toString()
-                .trim(),
-              SemId: Data.find((input) => input.id == "semester")
-                ["value"]._id.toString()
-                .toString()
-                .trim(),
-              StaffId: StaffId.trim(),
-              crAt: firebase.firestore.FieldValue.serverTimestamp(),
-              crBy: StaffId.trim(),
-              subName: Data.find((input) => input.id == "subName")
-                .value.trim()
-                .toString(),
-              subCode: Data.find((input) => input.id == "subCode")
-                .value.trim()
-                .toString(),
-            }
+        const SubId = firebase
+          .firestore()
+          .collection(
+            `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/subjects/`
           )
-          .then((res) => res.id);
+          .doc();
+
+        //add subject details to subject collection
+        transaction.set(
+          await firebase
+            .firestore()
+            .collection(
+              `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/subjects/`
+            )
+            .doc(SubId),
+          {
+            InId: InId.trim().toString(),
+            DepId: Data.find((input) => input.id == "department")
+              ["value"]._id.toString()
+              .trim(),
+            SemId: Data.find((input) => input.id == "semester")
+              ["value"]._id.toString()
+              .toString()
+              .trim(),
+            StaffId: StaffId.trim(),
+            crAt: firebase.firestore.FieldValue.serverTimestamp(),
+            crBy: StaffId.trim(),
+            subName: Data.find((input) => input.id == "subName")
+              .value.trim()
+              .toString(),
+            subCode: Data.find((input) => input.id == "subCode")
+              .value.trim()
+              .toString(),
+          }
+        );
 
         //add subject to student's attendane collection
 
