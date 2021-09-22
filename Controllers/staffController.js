@@ -1957,117 +1957,125 @@ const CreateClass = async (req, res) => {
                   .where("SemId", "==", SemId.trim())
                   .where("StudId", "==", StudId.trim())
               )
-              .then((data) => {
-                data.docs.map(async (doc) => {
-                  const data = doc.data();
-                  const subjectList = data.subjectList;
-                  const attendanceLog = data.attendanceLog;
+              .then(async (data) => {
+                await Promise.all(
+                  data.docs.map(async (doc) => {
+                    const data = doc.data();
+                    const subjectList = data.subjectList;
+                    const attendanceLog = data.attendanceLog;
 
-                  attendanceLog.push({
-                    ClsId: ClsId,
-                    StaffId: staffData.StaffId.trim(),
-                    SubId: subject._id.trim(),
-                    date: firebase.firestore.Timestamp.fromMillis(
-                      new Date(
-                        Data.find((input) => input.id == "date").value.trim() +
-                          " " +
-                          "12:00:00:AM"
-                      )
-                    ),
-                    staffName:
-                      staffData.firstName.trim() +
-                      " " +
-                      staffData.lastName.trim(),
-                    subName: subject.subName.trim(),
-                    staffData: staffData,
-                    subjectData: subject,
-                    status: "ABSENT",
-                    startingTime: firebase.firestore.Timestamp.fromMillis(
-                      new Date(
-                        Data.find((input) => input.id == "date").value.trim() +
-                          " " +
-                          new Date(
-                            "1970-01-01T" +
-                              Data.find(
-                                (input) => input.id == "startingTime"
-                              ).value.trim() +
-                              "Z"
-                          ).toLocaleTimeString(
-                            {},
-                            {
-                              timeZone: "UTC",
-                              hour12: true,
-                              hour: "numeric",
-                              minute: "numeric",
-                            }
-                          )
-                      )
-                    ),
-                    endingTime: firebase.firestore.Timestamp.fromMillis(
-                      new Date(
-                        Data.find((input) => input.id == "date").value.trim() +
-                          " " +
-                          new Date(
-                            "1970-01-01T" +
-                              Data.find(
-                                (input) => input.id == "endingTime"
-                              ).value.trim() +
-                              "Z"
-                          ).toLocaleTimeString(
-                            {},
-                            {
-                              timeZone: "UTC",
-                              hour12: true,
-                              hour: "numeric",
-                              minute: "numeric",
-                            }
-                          )
-                      )
-                    ),
-                  });
+                    attendanceLog.push({
+                      ClsId: ClsId,
+                      StaffId: staffData.StaffId.trim(),
+                      SubId: subject._id.trim(),
+                      date: firebase.firestore.Timestamp.fromMillis(
+                        new Date(
+                          Data.find(
+                            (input) => input.id == "date"
+                          ).value.trim() +
+                            " " +
+                            "12:00:00:AM"
+                        )
+                      ),
+                      staffName:
+                        staffData.firstName.trim() +
+                        " " +
+                        staffData.lastName.trim(),
+                      subName: subject.subName.trim(),
+                      staffData: staffData,
+                      subjectData: subject,
+                      status: "ABSENT",
+                      startingTime: firebase.firestore.Timestamp.fromMillis(
+                        new Date(
+                          Data.find(
+                            (input) => input.id == "date"
+                          ).value.trim() +
+                            " " +
+                            new Date(
+                              "1970-01-01T" +
+                                Data.find(
+                                  (input) => input.id == "startingTime"
+                                ).value.trim() +
+                                "Z"
+                            ).toLocaleTimeString(
+                              {},
+                              {
+                                timeZone: "UTC",
+                                hour12: true,
+                                hour: "numeric",
+                                minute: "numeric",
+                              }
+                            )
+                        )
+                      ),
+                      endingTime: firebase.firestore.Timestamp.fromMillis(
+                        new Date(
+                          Data.find(
+                            (input) => input.id == "date"
+                          ).value.trim() +
+                            " " +
+                            new Date(
+                              "1970-01-01T" +
+                                Data.find(
+                                  (input) => input.id == "endingTime"
+                                ).value.trim() +
+                                "Z"
+                            ).toLocaleTimeString(
+                              {},
+                              {
+                                timeZone: "UTC",
+                                hour12: true,
+                                hour: "numeric",
+                                minute: "numeric",
+                              }
+                            )
+                        )
+                      ),
+                    });
 
-                  const subjectToupdate =
+                    const subjectToupdate =
+                      subjectList[
+                        subjectList.findIndex(
+                          (subject) => subject.SubId === SubId.trim()
+                        )
+                      ];
+
+                    subjectToupdate.classes = {
+                      ...subjectToupdate.classes,
+                      [ClsId]: {
+                        ...subjectToupdate.classes[ClsId],
+                        ClsId: ClsId,
+                        status: "ABSENT",
+                      },
+                    };
+
+                    subjectToupdate.overAllPeriods =
+                      subjectToupdate.overAllPeriods + 1;
+
+                    // reassign object to local array variable
                     subjectList[
                       subjectList.findIndex(
                         (subject) => subject.SubId === SubId.trim()
                       )
-                    ];
+                    ] = subjectToupdate;
 
-                  subjectToupdate.classes = {
-                    ...subjectToupdate.classes,
-                    [ClsId]: {
-                      ...subjectToupdate.classes[ClsId],
-                      ClsId: ClsId,
-                      status: "ABSENT",
-                    },
-                  };
-
-                  subjectToupdate.overAllPeriods =
-                    subjectToupdate.overAllPeriods + 1;
-
-                  // reassign object to local array variable
-                  subjectList[
-                    subjectList.findIndex(
-                      (subject) => subject.SubId === SubId.trim()
-                    )
-                  ] = subjectToupdate;
-
-                  await transaction.set(
-                    firebase
-                      .firestore()
-                      .collection(
-                        `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/attendance/`
-                      )
-                      .doc(StudId.trim()),
-                    {
-                      overAllPeriods:
-                        firebase.firestore.FieldValue.increment(+1),
-                      subjectList: subjectList,
-                      attendanceLog: attendanceLog,
-                    },
-                    { merge: true }
-                  );
-                });
+                    await transaction.set(
+                      firebase
+                        .firestore()
+                        .collection(
+                          `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/attendance/`
+                        )
+                        .doc(StudId.trim()),
+                      {
+                        overAllPeriods:
+                          firebase.firestore.FieldValue.increment(+1),
+                        subjectList: subjectList,
+                        attendanceLog: attendanceLog,
+                      },
+                      { merge: true }
+                    );
+                  })
+                );
               });
           })
         );
