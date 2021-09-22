@@ -1651,8 +1651,6 @@ const CreateSubject = async (req, res) => {
               )
               .then(async (res) => res.data());
 
-            console.log(data);
-
             let subjectList = data.subjectList;
             subjectList.push({
               SubId: SubId.trim(),
@@ -1683,7 +1681,6 @@ const CreateSubject = async (req, res) => {
               },
               { merge: true }
             );
-            console.log(subjectList);
           })
         );
 
