@@ -892,7 +892,7 @@ const GetClasses = async (req, res) => {
   const { InId, DepId, SemId, StudId, ClsDate } = req.body;
   //Date format "2021-08-24 12:00:00:AM"
   try {
-    await firebase.firestore().runTransaction((transaction) => {
+    await firebase.firestore().runTransaction(async (transaction) => {
       const data = await transaction
         .get(
           firebase
@@ -913,7 +913,7 @@ const GetClasses = async (req, res) => {
         .then(
           async (res) =>
             await Promise.all(
-              res.docs.map((doc) => {
+              res.docs.map(async (doc) => {
                 const data = doc.data();
                 const id = doc.id;
 
