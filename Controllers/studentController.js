@@ -892,66 +892,86 @@ const GetClasses = async (req, res) => {
   const { InId, DepId, SemId, StudId, ClsDate } = req.body;
   //Date format "2021-08-24 12:00:00:AM"
   try {
-    const data = await firebase
-      .firestore()
-      .collectionGroup("classes")
-      .where("InId", "==", InId.trim())
-      .where("DepId", "==", DepId.trim())
-      .where("SemId", "==", SemId.trim())
-      .where("students", "array-contains-any", [StudId.trim()])
-      .where(
-        "date",
-        "==",
-        firebase.firestore.Timestamp.fromMillis(
-          new Date(ClsDate + " " + "12:00:00:AM")
+    await firebase.firestore().runTransaction((transaction) => {
+      const data = await transaction
+        .get(
+          firebase
+            .firestore()
+            .collectionGroup("classes")
+            .where("InId", "==", InId.trim())
+            .where("DepId", "==", DepId.trim())
+            .where("SemId", "==", SemId.trim())
+            .where("students", "array-contains-any", [StudId.trim()])
+            .where(
+              "date",
+              "==",
+              firebase.firestore.Timestamp.fromMillis(
+                new Date(ClsDate + " " + "12:00:00:AM")
+              )
+            )
         )
-      )
-      .get()
-      .then((res) =>
-        res.docs.map((doc) => {
-          const data = doc.data();
-          const id = doc.id;
-          return { id, ...data };
-        })
-      );
+        .then(
+          async (res) =>
+            await Promise.all(
+              res.docs.map((doc) => {
+                const data = doc.data();
+                const id = doc.id;
 
-    if (!data.length) {
+                const attendace = await transaction
+                  .get(
+                    firebase
+                      .firestore()
+                      .collectionGroup("attendance")
+                      .where("StudId", "==", StudId.trim())
+                  )
+                  .then((docs) => docs.docs.map((doc) => doc.data())[0]);
+                console.log(attendace);
+                return { id, ...data };
+              })
+            )
+        );
+
+      if (!data.length) {
+        return res.status(200).send({
+          status: 404,
+          err: "not found!",
+        });
+      }
+
+      const timeDeff = (start, end) => {
+        var diff = (start - end) / 1000;
+        diff /= 60;
+        return Math.abs(Math.round(diff));
+      };
+
       return res.status(200).send({
-        status: 404,
-        err: "not found!",
+        status: 200,
+        data: data.map((obj) => ({
+          _id: obj.id,
+          InId: obj.InId,
+          DepId: obj.DepId,
+          SemId: obj.SemId,
+          StaffId: obj.StaffId,
+          date: obj.date.toDate().toDateString().toUpperCase(),
+          start: obj.startingTime
+            .toDate()
+            .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+            .toUpperCase(),
+          end: obj.endingTime
+            .toDate()
+            .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+            .toUpperCase(),
+          meeting: obj.meeting.join_url ? obj.meeting : false,
+          duration: timeDeff(
+            obj.startingTime.toDate(),
+            obj.endingTime.toDate()
+          ),
+          subject: obj.subject.toString().trim(),
+          subId: obj.SubId.toString().trim(),
+          chapter: obj.chapter.toString().trim(),
+          staffName: obj.staffName.toString().trim(),
+        })),
       });
-    }
-
-    const timeDeff = (start, end) => {
-      var diff = (start - end) / 1000;
-      diff /= 60;
-      return Math.abs(Math.round(diff));
-    };
-
-    return res.status(200).send({
-      status: 200,
-      data: data.map((obj) => ({
-        _id: obj.id,
-        InId: obj.InId,
-        DepId: obj.DepId,
-        SemId: obj.SemId,
-        StaffId: obj.StaffId,
-        date: obj.date.toDate().toDateString().toUpperCase(),
-        start: obj.startingTime
-          .toDate()
-          .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-          .toUpperCase(),
-        end: obj.endingTime
-          .toDate()
-          .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-          .toUpperCase(),
-        meeting: obj.meeting.join_url ? obj.meeting : false,
-        duration: timeDeff(obj.startingTime.toDate(), obj.endingTime.toDate()),
-        subject: obj.subject.toString().trim(),
-        subId: obj.SubId.toString().trim(),
-        chapter: obj.chapter.toString().trim(),
-        staffName: obj.staffName.toString().trim(),
-      })),
     });
   } catch (err) {
     return res.status(400).send({ status: 400, error: err });
