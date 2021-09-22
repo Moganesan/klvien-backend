@@ -39,6 +39,7 @@ const {
   GetExamsList,
   GetClassesList,
   GetStudentsList,
+  GetStaffProfile,
 } = require("../Controllers/staffController");
 const firebase = require("../Config/fire-admin");
 const upload = require("express-fileupload");
@@ -118,6 +119,8 @@ router.get("/student/getprofile/:path", GetStudentProfile);
 router.get("/student/getassignment/:path", GetStudentAssignment);
 
 router.get("/student/getexam/:path", GetExam);
+
+router.get("/getprofile/:path", GetStaffProfile);
 
 router.post("/student/update", UpdateStudent);
 

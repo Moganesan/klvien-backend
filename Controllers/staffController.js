@@ -3070,6 +3070,10 @@ const GetStudentProfile = (req, res) => {
   res.download(`./Assets/studentProfiles/${req.params.path}`);
 };
 
+const GetStaffProfile = (req, res) => {
+  res.download(`./Assets/staffProfiles/${req.params.path}`);
+};
+
 const GetStudentAssignment = (req, res) => {
   res.download(`./Assets/assignments/${req.params.path}`);
 };
@@ -3095,6 +3099,7 @@ module.exports = {
   GetClassesList,
   GetExams,
   GetExamsList,
+  GetStaffProfile,
   GetAssignmentsList,
   GetExam,
   GetHolidays,
