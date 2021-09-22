@@ -928,9 +928,10 @@ const GetClasses = async (req, res) => {
                     (docs) =>
                       docs.docs.map((doc) => {
                         const data = doc.data();
-                        attendance = data.attendanceLog.find(
+                        const attendance = data.attendanceLog.find(
                           (cls) => cls.ClsId == id
                         );
+                        return attendance;
                       })[0]
                   );
 
