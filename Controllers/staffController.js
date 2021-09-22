@@ -1638,7 +1638,7 @@ const CreateSubject = async (req, res) => {
 
         //add subject to student's attendane collection
 
-        try {
+        await Promise.all(
           StudentIds.map(async (StudId) => {
             const data = await transaction
               .get(
@@ -1650,6 +1650,8 @@ const CreateSubject = async (req, res) => {
                   .doc(StudId.trim())
               )
               .then(async (res) => res.data());
+
+            console.log(data);
 
             let subjectList = data.subjectList;
             subjectList.push({
@@ -1681,10 +1683,9 @@ const CreateSubject = async (req, res) => {
               },
               { merge: true }
             );
-          });
-        } catch (err) {
-          console.log(err);
-        }
+            console.log(subjectList);
+          })
+        );
 
         //add subject details to subject collection
         await transaction.set(
