@@ -14,12 +14,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:3001",
-      "https://klvien.vercel.app",
-      "https://klvien-staffs.vercel.app",
-    ],
+    origin: "*",
     method: ["GET", "POST"],
     credentials: true,
     exposedHeaders: ["set-cookie"],
