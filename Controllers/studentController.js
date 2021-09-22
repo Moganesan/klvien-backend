@@ -961,7 +961,7 @@ const GetClasses = async (req, res) => {
           DepId: obj.DepId,
           SemId: obj.SemId,
           StaffId: obj.StaffId,
-          attendanceLog: obj.attendance,
+          attendance: obj.attendance.status.toUpperCase().toString(),
           date: obj.date.toDate().toDateString().toUpperCase(),
           start: obj.startingTime
             .toDate()
