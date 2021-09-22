@@ -796,6 +796,7 @@ const GetExams = async (req, res) => {
 const UploadExam = async (req, res) => {
   const { name, StudId, InId, SemId, DepId, ExamId } = req.body;
   const file = req.files.file;
+  console.log(req.body);
   if (req.files === null) {
     res.status(400).send({ status: 400, error: "No file uploaded!" });
   }
