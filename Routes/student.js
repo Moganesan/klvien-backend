@@ -15,6 +15,7 @@ const {
   GetBillings,
   AddFeedBack,
   GetProfile,
+  GetStudentAssignment,
 } = require("../Controllers/studentController");
 const firebase = require("../Config/fire-admin");
 const upload = require("express-fileupload");
@@ -61,7 +62,6 @@ router.get("/verify", verify, (req, res) => {
 });
 
 router.get("/signout", (req, res) => {
-  console.log("true");
   req.session.destroy();
   return res.status(200).send({
     status: 200,
@@ -91,5 +91,7 @@ router.post("/billings", GetBillings);
 router.post("/feedback/add", AddFeedBack);
 
 router.get("/getprofile/:path", GetProfile);
+
+router.get("/getassignment/:path", GetStudentAssignment);
 
 module.exports = router;

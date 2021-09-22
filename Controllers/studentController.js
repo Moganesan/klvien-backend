@@ -798,6 +798,7 @@ const UploadExam = async (req, res) => {
   const location = `./Assets/exams/IN${InId}-Exam${ExamId}-STUD${StudId}-${file.name}`;
   file.mv(location, async (err) => {
     if (err) {
+      console.log(err);
       return res.status(500).send(err);
     }
     try {
@@ -1153,6 +1154,10 @@ const GetProfile = (req, res) => {
   res.download(`./Assets/studentProfiles/${req.params.path}`);
 };
 
+const GetStudentAssignment = (req, res) => {
+  res.download(`./Assets/assignments/${req.params.path}`);
+};
+
 module.exports = {
   loginAccount,
   googleLogin,
@@ -1163,6 +1168,7 @@ module.exports = {
   GetBillings,
   UploadAssignment,
   GetExams,
+  GetStudentAssignment,
   UploadExam,
   GetHolidays,
   GetClasses,
