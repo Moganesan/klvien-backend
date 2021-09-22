@@ -1614,7 +1614,7 @@ const CreateSubject = async (req, res) => {
 
   if (Data.length) {
     try {
-      await firebase.firestore().runTransaction(async (transaction) => {
+      return await firebase.firestore().runTransaction(async (transaction) => {
         //get student id's
         const StudentIds = await transaction
           .get(
@@ -1629,7 +1629,7 @@ const CreateSubject = async (req, res) => {
             res.docs.map((doc) => doc.data().StudId).filter((id) => id != "")
           );
 
-        const SubId = firebase
+        const SubId = await firebase
           .firestore()
           .collection(
             `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/subjects/`
@@ -1640,8 +1640,7 @@ const CreateSubject = async (req, res) => {
 
         try {
           StudentIds.map(async (StudId) => {
-            console.log(StudId);
-            await transaction
+            const data = await transaction
               .get(
                 firebase
                   .firestore()
@@ -1650,48 +1649,46 @@ const CreateSubject = async (req, res) => {
                   )
                   .doc(StudId.trim())
               )
-              .then(async (res) => {
-                const data = res.data();
-                let subjectList = data.subjectList;
-                subjectList.push({
-                  SubId: SubId.trim(),
-                  crAt: new Date(),
-                  crBy: StaffId.trim(),
-                  subName: Data.find((input) => input.id == "subName")
-                    .value.trim()
-                    .toString(),
-                  subCode: Data.find((input) => input.id == "subCode")
-                    .value.trim()
-                    .toString(),
-                  classes: {},
-                  currentMonthPercentage: 0,
-                  overAllPercentage: 0,
-                  overAllPeriods: 0,
-                  overAllPrecent: 0,
-                });
+              .then(async (res) => res.data());
 
-                await transaction.set(
-                  firebase
-                    .firestore()
-                    .collection(
-                      `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/attendance/`
-                    )
-                    .doc(StudId.trim()),
-                  {
-                    subjectList: subjectList,
-                  },
-                  { merge: true }
-                );
-              })
-              .catch((err) => console.log(err));
+            let subjectList = data.subjectList;
+            subjectList.push({
+              SubId: SubId.trim(),
+              crAt: new Date(),
+              crBy: StaffId.trim(),
+              subName: Data.find((input) => input.id == "subName")
+                .value.trim()
+                .toString(),
+              subCode: Data.find((input) => input.id == "subCode")
+                .value.trim()
+                .toString(),
+              classes: {},
+              currentMonthPercentage: 0,
+              overAllPercentage: 0,
+              overAllPeriods: 0,
+              overAllPrecent: 0,
+            });
+
+            await transaction.set(
+              firebase
+                .firestore()
+                .collection(
+                  `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/attendance/`
+                )
+                .doc(StudId.trim()),
+              {
+                subjectList: subjectList,
+              },
+              { merge: true }
+            );
           });
         } catch (err) {
           console.log(err);
         }
 
         //add subject details to subject collection
-        transaction.set(
-          await firebase
+        await transaction.set(
+          firebase
             .firestore()
             .collection(
               `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/subjects/`
