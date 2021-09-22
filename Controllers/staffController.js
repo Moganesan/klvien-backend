@@ -1634,7 +1634,7 @@ const CreateSubject = async (req, res) => {
           .collection(
             `/institutions/${InId.trim()}/departments/${DepId.trim()}/semesters/${SemId.trim()}/subjects/`
           )
-          .doc();
+          .doc().id;
 
         //add subject details to subject collection
         transaction.set(
