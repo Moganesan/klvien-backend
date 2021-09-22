@@ -776,6 +776,9 @@ const GetExams = async (req, res) => {
           .toLocaleTimeString()
           .toUpperCase(),
         endingTime: obj.endingTime.toDate().toLocaleTimeString().toUpperCase(),
+        file: obj.studentsStatus.find((student) => student.StudId === StudId)[
+          "file"
+        ],
         status: obj.studentsStatus
           .find((student) => student.StudId === StudId)
           ["status"].toString()
@@ -797,7 +800,9 @@ const UploadExam = async (req, res) => {
     res.status(400).send({ status: 400, error: "No file uploaded!" });
   }
 
-  const location = `./Assets/exams/IN${InId}-Exam${ExamId}-STUD${StudId}-${file.name}`;
+  const location = `./Assets/exams/IN${InId}-Exam${ExamId}-STUD${StudId}-${file.name
+    .replace(/\s/g, "")
+    .trim()}`;
   file.mv(location, async (err) => {
     if (err) {
       console.log(err);
@@ -821,7 +826,9 @@ const UploadExam = async (req, res) => {
               (status) => status.StudId == StudId.trim()
             );
             studentStatusToUpdate.status = "CHECKING";
-            studentStatusToUpdate.file = `IN${InId}-Exam${ExamId}-STUD${StudId}-${file.name}`;
+            studentStatusToUpdate.file = `IN${InId}-Exam${ExamId}-STUD${StudId}-${file.name
+              .replace(/\s/g, "")
+              .trim()}`;
 
             studentsStatus[
               studentsStatus.find((status) => status.StudId == StudId.trim())
