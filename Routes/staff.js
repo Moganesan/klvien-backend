@@ -1,47 +1,46 @@
 const router = require("express").Router();
 const {
-  checkStaff,
-  loginAccount,
-  googleLogin,
-  createAccount,
-  Verify,
-  GetSubjects,
-  GetStudents,
-  CreateStudent,
-  UpdateStudent,
-  GetAttendance,
-  GetAssignment,
-  UploadAssignment,
-  GetExams,
-  UploadExam,
-  GetHolidays,
-  GetClasses,
-  CreateClass,
-  AddAttendance,
-  GetBillings,
-  AddFeedBack,
-  GetAssignmentsList,
-  UploadProfile,
-  GetStudentProfile,
-  GetStudentsAttendance,
-  GetStudentsAssignments,
-  CreateAssignment,
-  CreateExam,
-  CreateHolidays,
-  UpdateClass,
-  AddStudentAttendance,
-  CreateSubject,
-  GetStudentAssignment,
-  UpdateAssignmentStatus,
-  UpdateExamStatus,
-  GetExam,
-  GetRecentStudentsLogins,
-  GetExamsList,
-  GetClassesList,
-  GetStudentsList,
-  GetStaffProfile,
+	checkStaff,
+	loginAccount,
+	googleLogin,
+	createAccount,
+	Verify,
+	GetSubjects,
+	GetStudents,
+	CreateStudent,
+	UpdateStudent,
+	GetAttendance,
+	GetAssignment,
+	UploadAssignment,
+	GetExams,
+	UploadExam,
+	GetHolidays,
+	GetClasses,
+	CreateClass,
+	AddAttendance,
+	GetBillings,
+	AddFeedBack,
+	GetAssignmentsList,
+	UploadProfile,
+	GetStudentProfile,
+	GetStudentsAttendance,
+	GetStudentsAssignments,
+	CreateAssignment,
+	CreateExam,
+	CreateHolidays,
+	UpdateClass,
+	AddStudentAttendance,
+	CreateSubject,
+	GetStudentAssignment,
+	UpdateAssignmentStatus,
+	UpdateExamStatus,
+	GetExam,
+	GetRecentStudentsLogins,
+	GetExamsList,
+	GetClassesList,
+	GetStudentsList,
+	GetStaffProfile,
 } = require("../Controllers/staffController");
-const firebase = require("../Config/fire-admin");
 const upload = require("express-fileupload");
 
 router.use(upload());
@@ -53,21 +52,21 @@ router.post("/googleLogin", checkStaff, googleLogin);
 router.post("/signup", checkStaff, createAccount);
 
 router.get("/verify", Verify, (req, res) => {
-  console.log(req.session);
-  return res.status(401).send({
-    status: 401,
-    data: null,
-    message: "Unothorized request plese login",
-  });
+	console.log(req.session);
+	return res.status(401).send({
+		status: 401,
+		data: null,
+		message: "Unothorized request plese login",
+	});
 });
 
 router.get("/signout", (req, res) => {
-  req.session.destroy();
-  return res.status(200).send({
-    status: 200,
-    data: null,
-    message: "session destroyed",
-  });
+	req.session.destroy();
+	return res.status(200).send({
+		status: 200,
+		data: null,
+		message: "session destroyed",
+	});
 });
 
 router.post("/subjects", GetSubjects);

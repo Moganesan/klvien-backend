@@ -3,6 +3,7 @@ const firebase = require("./Config/fire-admin");
 const express = require("express");
 const studentRoutes = require("./Routes/student");
 const staffRoutes = require("./Routes/staff");
+const managementRoutes = require("./Routes/management");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const FirebaseStore = require("connect-session-firebase")(session);
@@ -17,8 +18,8 @@ app.use(
     origin: [
       "http://localhost:3000",
       "http://localhost:3001",
-      "https://klvien.vercel.app",
-      "https://klvien-staffs.vercel.app",
+      "https://klvien.moganesan.tech/",
+      "https://klvien-staffs.moganesan.tech",
     ],
     method: ["GET", "POST"],
     credentials: true,
@@ -59,6 +60,8 @@ app.get("/", (req, res) => {
 app.use("/student", studentRoutes);
 
 app.use("/staff", staffRoutes);
+
+app.use("/management", managementRoutes);
 
 const PORT = process.env.PORT || 4000;
 
