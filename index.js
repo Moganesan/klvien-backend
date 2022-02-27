@@ -20,6 +20,7 @@ app.use(
       "http://localhost:3001",
       "https://klvien.vercel.app",
       "https://klvien.moganesan.tech",
+      "https://klvien-staffs.moganesan.tech",
       "https://klvien-staffs.vercel.app",
     ],
     method: ["GET", "POST"],
