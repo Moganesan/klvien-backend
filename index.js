@@ -18,8 +18,9 @@ app.use(
     origin: [
       "http://localhost:3000",
       "http://localhost:3001",
-      "https://klvien.moganesan.tech/",
-      "https://klvien-staffs.moganesan.tech",
+      "https://klvien.vercel.app",
+      "https://klvien.moganesan.tech",
+      "https://klvien-staffs.vercel.app",
     ],
     method: ["GET", "POST"],
     credentials: true,
